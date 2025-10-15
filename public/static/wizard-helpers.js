@@ -238,13 +238,17 @@ Object.assign(ProjectWizard, {
       const form = document.getElementById('step1Form');
       if (form) {
         const formData = new FormData(form);
+        const clientId = formData.get('client_id');
+        
         this.projectData.project = {
           project_code: formData.get('project_code'),
           project_name: formData.get('project_name'),
-          client_name: formData.get('client_name'),
+          client_id: clientId && clientId !== 'new' && clientId !== '' ? parseInt(clientId) : null,
+          client_name: clientId === 'new' || clientId === '' ? formData.get('client_name') : this.projectData.project.client_name,
           start_date: formData.get('start_date'),
           end_date: formData.get('end_date'),
           status: formData.get('status'),
+          approval_status: 'draft',
           tax_rate: parseFloat(formData.get('tax_rate')) / 100,
           ga_percentage: parseFloat(formData.get('ga_percentage')) / 100,
           ga_application: formData.get('ga_application'),

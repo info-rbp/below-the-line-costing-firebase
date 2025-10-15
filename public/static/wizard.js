@@ -10,10 +10,12 @@ const ProjectWizard = {
     project: {
       project_code: '',
       project_name: '',
+      client_id: null,
       client_name: '',
       start_date: '',
       end_date: '',
       status: 'active',
+      approval_status: 'draft',
       tax_rate: 0.10,
       ga_percentage: 0.15,
       ga_application: 'all',
@@ -44,20 +46,26 @@ const ProjectWizard = {
     this.render();
   },
   
-  // Load personnel and rate bands
+  // Load personnel, rate bands, clients, and materials
   async loadReferenceData() {
     try {
-      const [personnelRes, rateBandsRes] = await Promise.all([
+      const [personnelRes, rateBandsRes, clientsRes, materialsRes] = await Promise.all([
         api.getPersonnel(),
-        api.request('/rate-bands?active=true')
+        api.request('/rate-bands?active=true'),
+        api.request('/clients?active=true'),
+        api.request('/materials-master?active=true')
       ]);
       
       this.personnel = personnelRes.data || [];
       this.rateBands = rateBandsRes.data || [];
+      this.clients = clientsRes.data || [];
+      this.materials = materialsRes.data || [];
     } catch (error) {
       console.error('Failed to load reference data:', error);
       this.personnel = [];
       this.rateBands = [];
+      this.clients = [];
+      this.materials = [];
     }
   },
   
@@ -182,11 +190,28 @@ const ProjectWizard = {
           
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">
-              Client Name <span class="text-red-500">*</span>
+              Select Client <span class="text-red-500">*</span>
             </label>
-            <input type="text" name="client_name" required
-              value="${p.client_name}"
-              placeholder="Government Department XYZ"
+            <select name="client_id" id="clientSelect" required onchange="ProjectWizard.handleClientSelect()"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+              <option value="">-- Select a client --</option>
+              ${(this.clients || []).map(client => `
+                <option value="${client.id}" ${p.client_id === client.id ? 'selected' : ''}>
+                  ${client.client_code} - ${client.client_name}
+                </option>
+              `).join('')}
+              <option value="new">+ Add New Client</option>
+            </select>
+            <p class="text-xs text-gray-500 mt-1">Select from CRM or add new</p>
+          </div>
+          
+          <div id="clientNameInput" ${p.client_id !== 'new' ? 'style="display:none"' : ''}>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Client Name (New) <span class="text-red-500">*</span>
+            </label>
+            <input type="text" name="client_name"
+              value="${p.client_name || ''}"
+              placeholder="Enter new client name"
               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
           </div>
           
@@ -605,6 +630,51 @@ const ProjectWizard = {
         </button>
       </div>
     `;
+  },
+  
+  // Handle client selection in Step 1
+  handleClientSelect() {
+    const select = document.getElementById('clientSelect');
+    const clientNameInput = document.getElementById('clientNameInput');
+    const clientNameField = clientNameInput?.querySelector('input[name="client_name"]');
+    
+    if (select.value === 'new') {
+      // Show custom client name input
+      if (clientNameInput) {
+        clientNameInput.style.display = 'block';
+        if (clientNameField) {
+          clientNameField.required = true;
+        }
+      }
+      this.projectData.project.client_id = null;
+      this.projectData.project.client_name = '';
+    } else if (select.value === '') {
+      // Nothing selected
+      if (clientNameInput) {
+        clientNameInput.style.display = 'none';
+        if (clientNameField) {
+          clientNameField.required = false;
+        }
+      }
+      this.projectData.project.client_id = null;
+      this.projectData.project.client_name = '';
+    } else {
+      // Existing client selected
+      const clientId = parseInt(select.value);
+      const client = this.clients.find(c => c.id === clientId);
+      
+      if (clientNameInput) {
+        clientNameInput.style.display = 'none';
+        if (clientNameField) {
+          clientNameField.required = false;
+        }
+      }
+      
+      if (client) {
+        this.projectData.project.client_id = client.id;
+        this.projectData.project.client_name = client.client_name;
+      }
+    }
   }
 };
 
