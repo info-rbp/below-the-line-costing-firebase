@@ -6,14 +6,41 @@
 
 ### Key Features
 
-- **6-Step Project Creation Wizard**: Complete wizard for creating projects from scratch
-  - Step 1: Project Basics (code, name, client, dates, tax, G&A settings)
-  - Step 2: Milestones (dynamic milestone builder with add/remove)
+- **Enhanced 6-Step Project Creation Wizard**: Complete wizard for creating projects from scratch
+  - Step 1: Project Basics with **Client Dropdown from CRM** (8 pre-loaded clients)
+  - Step 2: **Hierarchical Milestone Tree Builder** (3-level deep parent-child structure)
   - Step 3: Labour Costs (WBS builder with actual vs banded rate toggle)
-  - Step 4: Material Costs (cost type classification: milestone/monthly/one-time)
+  - Step 4: Material Costs with **Materials Master Integration** (30 pre-loaded materials)
   - Step 5: Payment Schedule (billing milestones with revenue tracking)
-  - Step 6: Review & Create (financial summary with margin validation)
-- **Project Management**: Track projects with client information, dates, and financial settings
+  - Step 6: Review & Create with **Approval Workflow Options** (Draft/Active/Submit)
+  
+- **Manager Settings Dashboard** (Admin/Manager Only)
+  - **Clients CRM**: Complete customer relationship management
+    - Full CRUD with 8 pre-loaded clients
+    - Search & filters (type, industry, status)
+    - Project history tracking
+    - Add/Edit modal forms
+  - **Materials Master Catalog**: Pre-defined materials library
+    - 30 materials across 5 categories (Equipment, Software, Services, Consumables, Hardware)
+    - Search & filters (category, cost type, status)
+    - Standard costs and suppliers
+    - Add/Edit modal forms
+  - **Employee Master**: Manage employee database
+  - **System Settings**: Configure system defaults
+  
+- **Approval Workflow System** (Manager/Admin Only)
+  - **Pending Approvals View**: Review project submissions
+  - **Approval Modal**: Approve/Reject with comments
+  - Badge notifications showing pending count
+  - Complete audit trail (submitted/approved/rejected timestamps)
+  - Status indicators throughout the system
+  
+- **Enhanced Project Management**
+  - **Project Status Indicators**: Visual badges with icons (Active, Completed, On-Hold, Planning)
+  - **Approval Status Column**: Draft, Pending, Approved, Rejected badges
+  - Track projects with client information, dates, and financial settings
+  - Real-time margin warnings
+  
 - **Personnel Register**: Manage staff database with hourly costs and banded rates
 - **Cost Tracking**: Labour cost line items with actual vs banded rate options
 - **Material Costs**: Non-labour costs with milestone, monthly, and one-time classifications
@@ -47,42 +74,70 @@
    - JWT token-based authentication
 
 2. **Projects**: Central project entity
-   - Project code, name, client, dates
+   - Project code, name, client reference (FK to clients)
    - Tax rate, G&A percentage, status
+   - **Approval workflow fields**: approval_status, submitted_at, approved_at, approved_by, rejection_reason
    - Calculated totals and margin
 
-3. **Personnel**: Staff database
+3. **Clients (CRM)**: Customer relationship management
+   - Client code, name, type, industry
+   - Primary contact information (name, email, phone)
+   - Financial terms (payment terms, credit limit)
+   - Address, website, notes
+   - Active/inactive status
+   - **Pre-loaded**: 8 clients across various industries
+
+4. **Materials Master**: Pre-defined materials catalog
+   - Material code, name, category
+   - Default unit cost, unit of measure
+   - Supplier name, lead time
+   - Cost type (one-time, monthly, annual)
+   - Minimum order quantity, description
+   - Active/inactive status
+   - **Pre-loaded**: 30 materials across 5 categories
+
+5. **Project Approvals**: Approval audit trail
+   - Project reference, approver reference
+   - Action (submitted, approved, rejected)
+   - Comments, timestamps
+   - Complete history of approval actions
+
+6. **Personnel**: Staff database
    - Employee ID, name, role, level
    - Hourly cost and banded rates
 
-4. **Rate Bands**: Role-based costing rates
+7. **Rate Bands**: Role-based costing rates
    - Band name, level, description
    - Standard hourly rates
 
-5. **Milestones**: Project milestones
+8. **Milestones**: Project milestones with hierarchy
    - Milestone code, name, date
+   - **Hierarchical fields**: parent_milestone_id, milestone_level, milestone_path, is_parent
+   - Supports 3-level tree structure (Root → Level 1 → Level 2)
    - Linked to cost items
 
-6. **Cost Line Items**: Labour costs
+9. **Cost Line Items**: Labour costs
    - WBS code, task description
    - Actual vs banded rate toggle
    - Hours, rates, G&A application
    - Calculated costs (base, G&A, total)
 
-7. **Material Costs**: Non-labour expenses
-   - Description, category, supplier
-   - Cost type: milestone, monthly, one-time
-   - Quantity, unit cost, G&A application
+10. **Material Costs**: Non-labour expenses
+    - Description, category, supplier
+    - **Materials master reference**: material_master_id (optional FK)
+    - Cost type: milestone, monthly, one-time
+    - Quantity, unit cost, G&A application
+    - Material code (from master or custom)
 
-8. **Payment Schedule**: Billing and invoices
-   - Payment milestones, dates, amounts
-   - Invoice tracking and status
+11. **Payment Schedule**: Billing and invoices
+    - Payment milestones, dates, amounts
+    - Invoice tracking and status
 
-9. **Cash Flow**: Month-by-month tracking
-   - Labour and material outflows
-   - Revenue inflow, net cash flow
+12. **Cash Flow**: Month-by-month tracking
+    - Labour and material outflows
+    - Revenue inflow, net cash flow
 
-10. **Integration Data**: Xero and MS Project imports
+13. **Integration Data**: Xero and MS Project imports
 
 ### Database Schema
 
@@ -535,10 +590,10 @@ Proprietary - JL2 Group
 
 ## Current Status
 
-### ✅ Completed Features
+### ✅ Phase 1 Completed - Core Application (September 2025)
 
 1. **Core Backend API** - All RESTful endpoints operational
-2. **Database Schema** - Complete with 13 tables and relationships
+2. **Database Schema** - Initial schema with 13 tables and relationships
 3. **Authentication System** - JWT-based with role-based access control
 4. **Project Creation Wizard** - Full 6-step wizard implemented and integrated
 5. **Frontend Application** - SPA with dashboard, projects, personnel views
@@ -547,11 +602,47 @@ Proprietary - JL2 Group
 8. **Rate Bands** - Role-based costing system
 9. **Personnel Register** - 30 employees pre-loaded from Excel
 
-### 🔄 In Development
+### ✅ Phase 2 Completed - Major Enhancements (October 2025)
 
-1. **UI/UX Testing** - Wizard needs browser testing and refinement
-2. **Form Validation** - Enhanced client-side validation in wizard
-3. **Error Handling** - Better error messages and recovery
+**Database Enhancements:**
+- **3 New Tables**: clients, materials_master, project_approvals
+- **Schema Updates**: Added hierarchical milestone fields, approval workflow fields, materials master references
+- **Seed Data**: 8 clients, 30 materials pre-loaded
+
+**Backend API Enhancements:**
+- **Clients API** (`/api/clients`): Full CRUD with filters, project history
+- **Materials Master API** (`/api/materials-master`): Full CRUD with categories
+- **Approval Workflow APIs**: 
+  - `POST /projects/:id/submit-for-approval`
+  - `POST /projects/:id/approve`
+  - `POST /projects/:id/reject`
+  - `GET /projects/pending-approval`
+  - `GET /projects/my-submissions`
+- **Milestone Tree API** (`GET /api/milestones/tree`): Hierarchical structure support
+
+**Frontend UI Enhancements:**
+1. **Manager Settings Dashboard** (Admin/Manager Only)
+   - Clients CRM table with search/filters and Add/Edit modals
+   - Materials Master table with search/filters and Add/Edit modals
+   - Employees tab (placeholder for future)
+   - System Settings tab
+
+2. **Enhanced Project Creation Wizard**
+   - Step 1: Client dropdown (8 clients from CRM, + Add New option)
+   - Step 2: Hierarchical milestone tree builder (3 levels deep)
+   - Step 4: Materials master integration (From Catalog or Custom Entry)
+   - Step 6: Approval workflow options (Draft/Active/Submit)
+
+3. **Approval Workflow UI** (Manager/Admin Only)
+   - Pending Approvals view with badge notifications
+   - Project cards with financial summaries
+   - Approval Review modal with approve/reject actions
+   - Status filtering (Pending/All/Approved/Rejected)
+
+4. **Enhanced Projects Table**
+   - Project Status column with icons (Active/Completed/On-Hold/Planning)
+   - Approval Status column with badges (Draft/Pending/Approved/Rejected)
+   - Visual indicators throughout
 
 ### ⏳ Pending Implementation
 
@@ -565,11 +656,12 @@ Proprietary - JL2 Group
 
 ### 🎯 Next Steps
 
-1. Test wizard in browser and fix UI issues
-2. Add project editing capabilities
-3. Implement cost item management UI
-4. Configure Xero API credentials
-5. Deploy to Cloudflare Pages production
+1. **Deploy to Production** - Cloudflare Pages deployment
+2. **Setup GitHub Repository** - Push code and configure CI/CD
+3. **User Acceptance Testing** - Full end-to-end testing
+4. **Project Editing** - Add full edit capabilities
+5. **Configure Xero Integration** - Add API credentials
+6. **Production Monitoring** - Setup error tracking and analytics
 
 ---
 
