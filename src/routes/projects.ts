@@ -502,4 +502,207 @@ projects.post('/with-details', requireRole('admin', 'manager'), async (c) => {
   }
 });
 
+/**
+ * POST /api/projects/:id/submit-for-approval
+ * Submit project for manager approval
+ */
+projects.post('/:id/submit-for-approval', requireRole('user', 'manager', 'admin'), async (c) => {
+  try {
+    const id = c.req.param('id');
+    const user = c.get('user') as User;
+    const { approver_id, comments } = await c.req.json();
+    
+    // Get project
+    const project = await c.env.DB.prepare(
+      'SELECT * FROM projects WHERE id = ?'
+    ).bind(id).first<Project>();
+    
+    if (!project) {
+      return c.json<ApiResponse>({ success: false, error: 'Project not found' }, 404);
+    }
+    
+    // Only draft projects can be submitted
+    if (project.approval_status !== 'draft') {
+      return c.json<ApiResponse>({ 
+        success: false, 
+        error: `Project is already ${project.approval_status}. Only draft projects can be submitted.` 
+      }, 400);
+    }
+    
+    // Update project status
+    await c.env.DB.prepare(`
+      UPDATE projects 
+      SET approval_status = 'pending_approval',
+          submitted_at = CURRENT_TIMESTAMP,
+          submitted_by = ?
+      WHERE id = ?
+    `).bind(user.id, id).run();
+    
+    // Log approval action
+    await c.env.DB.prepare(`
+      INSERT INTO project_approvals (project_id, approver_id, action, comments)
+      VALUES (?, ?, 'submitted', ?)
+    `).bind(id, approver_id || user.id, comments || 'Project submitted for approval').run();
+    
+    const updated = await c.env.DB.prepare(
+      'SELECT * FROM projects WHERE id = ?'
+    ).bind(id).first<Project>();
+    
+    return c.json<ApiResponse>({ success: true, data: updated });
+  } catch (error) {
+    console.error('Submit for approval error:', error);
+    return c.json<ApiResponse>({ success: false, error: 'Failed to submit project' }, 500);
+  }
+});
+
+/**
+ * POST /api/projects/:id/approve
+ * Approve project (Manager/Admin only)
+ */
+projects.post('/:id/approve', requireRole('manager', 'admin'), async (c) => {
+  try {
+    const id = c.req.param('id');
+    const user = c.get('user') as User;
+    const { comments } = await c.req.json();
+    
+    // Get project
+    const project = await c.env.DB.prepare(
+      'SELECT * FROM projects WHERE id = ?'
+    ).bind(id).first<Project>();
+    
+    if (!project) {
+      return c.json<ApiResponse>({ success: false, error: 'Project not found' }, 404);
+    }
+    
+    // Only pending projects can be approved
+    if (project.approval_status !== 'pending_approval') {
+      return c.json<ApiResponse>({ 
+        success: false, 
+        error: `Project is ${project.approval_status}. Only pending projects can be approved.` 
+      }, 400);
+    }
+    
+    // Update project status
+    await c.env.DB.prepare(`
+      UPDATE projects 
+      SET approval_status = 'approved',
+          approved_at = CURRENT_TIMESTAMP,
+          approved_by = ?,
+          status = 'active'
+      WHERE id = ?
+    `).bind(user.id, id).run();
+    
+    // Log approval action
+    await c.env.DB.prepare(`
+      INSERT INTO project_approvals (project_id, approver_id, action, comments)
+      VALUES (?, ?, 'approved', ?)
+    `).bind(id, user.id, comments || 'Project approved').run();
+    
+    const updated = await c.env.DB.prepare(
+      'SELECT * FROM projects WHERE id = ?'
+    ).bind(id).first<Project>();
+    
+    return c.json<ApiResponse>({ success: true, data: updated });
+  } catch (error) {
+    console.error('Approve project error:', error);
+    return c.json<ApiResponse>({ success: false, error: 'Failed to approve project' }, 500);
+  }
+});
+
+/**
+ * POST /api/projects/:id/reject
+ * Reject project (Manager/Admin only)
+ */
+projects.post('/:id/reject', requireRole('manager', 'admin'), async (c) => {
+  try {
+    const id = c.req.param('id');
+    const user = c.get('user') as User;
+    const { comments, rejection_reason } = await c.req.json();
+    
+    // Get project
+    const project = await c.env.DB.prepare(
+      'SELECT * FROM projects WHERE id = ?'
+    ).bind(id).first<Project>();
+    
+    if (!project) {
+      return c.json<ApiResponse>({ success: false, error: 'Project not found' }, 404);
+    }
+    
+    // Only pending projects can be rejected
+    if (project.approval_status !== 'pending_approval') {
+      return c.json<ApiResponse>({ 
+        success: false, 
+        error: `Project is ${project.approval_status}. Only pending projects can be rejected.` 
+      }, 400);
+    }
+    
+    // Update project status
+    await c.env.DB.prepare(`
+      UPDATE projects 
+      SET approval_status = 'rejected',
+          rejection_reason = ?
+      WHERE id = ?
+    `).bind(rejection_reason || 'No reason provided', id).run();
+    
+    // Log approval action
+    await c.env.DB.prepare(`
+      INSERT INTO project_approvals (project_id, approver_id, action, comments)
+      VALUES (?, ?, 'rejected', ?)
+    `).bind(id, user.id, comments || rejection_reason || 'Project rejected').run();
+    
+    const updated = await c.env.DB.prepare(
+      'SELECT * FROM projects WHERE id = ?'
+    ).bind(id).first<Project>();
+    
+    return c.json<ApiResponse>({ success: true, data: updated });
+  } catch (error) {
+    console.error('Reject project error:', error);
+    return c.json<ApiResponse>({ success: false, error: 'Failed to reject project' }, 500);
+  }
+});
+
+/**
+ * GET /api/projects/pending-approval
+ * Get all projects pending approval (Manager/Admin only)
+ */
+projects.get('/pending-approval', requireRole('manager', 'admin'), async (c) => {
+  try {
+    const { results } = await c.env.DB.prepare(`
+      SELECT p.*, u.full_name as submitted_by_name, u.email as submitted_by_email
+      FROM projects p
+      LEFT JOIN users u ON p.submitted_by = u.id
+      WHERE p.approval_status = 'pending_approval'
+      ORDER BY p.submitted_at DESC
+    `).all<Project>();
+    
+    return c.json<ApiResponse>({ success: true, data: results });
+  } catch (error) {
+    console.error('Get pending approvals error:', error);
+    return c.json<ApiResponse>({ success: false, error: 'Failed to fetch pending approvals' }, 500);
+  }
+});
+
+/**
+ * GET /api/projects/my-submissions
+ * Get current user's submitted projects
+ */
+projects.get('/my-submissions', async (c) => {
+  try {
+    const user = c.get('user') as User;
+    
+    const { results } = await c.env.DB.prepare(`
+      SELECT p.*, u.full_name as approved_by_name
+      FROM projects p
+      LEFT JOIN users u ON p.approved_by = u.id
+      WHERE p.submitted_by = ?
+      ORDER BY p.submitted_at DESC
+    `).bind(user.id).all<Project>();
+    
+    return c.json<ApiResponse>({ success: true, data: results });
+  } catch (error) {
+    console.error('Get my submissions error:', error);
+    return c.json<ApiResponse>({ success: false, error: 'Failed to fetch submissions' }, 500);
+  }
+});
+
 export default projects;

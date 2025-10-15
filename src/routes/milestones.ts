@@ -60,7 +60,10 @@ milestones.get('/:id', async (c) => {
 milestones.post('/', requireRole('admin', 'manager', 'user'), async (c) => {
   try {
     const data = await c.req.json();
-    const { project_id, milestone_code, milestone_name, milestone_date, description, sequence_order } = data;
+    const { 
+      project_id, milestone_code, milestone_name, milestone_date, description, sequence_order,
+      parent_milestone_id, milestone_level 
+    } = data;
     
     if (!project_id || !milestone_code || !milestone_name) {
       return c.json<ApiResponse>({ 
@@ -81,15 +84,46 @@ milestones.post('/', requireRole('admin', 'manager', 'user'), async (c) => {
       }, 400);
     }
     
+    // Build milestone path
+    let milestone_path = milestone_code;
+    let level = milestone_level || 0;
+    let is_parent = 0;
+    
+    if (parent_milestone_id) {
+      const parent = await c.env.DB.prepare(
+        'SELECT milestone_code, milestone_path, milestone_level FROM milestones WHERE id = ?'
+      ).bind(parent_milestone_id).first<any>();
+      
+      if (parent) {
+        milestone_path = parent.milestone_path ? `${parent.milestone_path}.${milestone_code}` : milestone_code;
+        level = (parent.milestone_level || 0) + 1;
+        
+        // Mark parent as having children
+        await c.env.DB.prepare(
+          'UPDATE milestones SET is_parent = 1 WHERE id = ?'
+        ).bind(parent_milestone_id).run();
+      }
+    }
+    
     const result = await c.env.DB.prepare(`
-      INSERT INTO milestones (project_id, milestone_code, milestone_name, milestone_date, description, sequence_order)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `).bind(project_id, milestone_code, milestone_name, milestone_date, description, sequence_order || 0).run();
+      INSERT INTO milestones (
+        project_id, milestone_code, milestone_name, milestone_date, description, sequence_order,
+        parent_milestone_id, milestone_level, milestone_path, is_parent
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      project_id, milestone_code, milestone_name, milestone_date, description, sequence_order || 0,
+      parent_milestone_id || null, level, milestone_path, is_parent
+    ).run();
+    
+    const newMilestone = await c.env.DB.prepare(
+      'SELECT * FROM milestones WHERE id = ?'
+    ).bind(result.meta.last_row_id).first<Milestone>();
     
     return c.json<ApiResponse>({ 
       success: true, 
       message: 'Milestone created successfully',
-      data: { id: result.meta.last_row_id }
+      data: newMilestone
     }, 201);
   } catch (error) {
     console.error('Create milestone error:', error);
@@ -210,6 +244,42 @@ milestones.delete('/:id', requireRole('admin', 'manager'), async (c) => {
   } catch (error) {
     console.error('Delete milestone error:', error);
     return c.json<ApiResponse>({ success: false, error: 'Failed to delete milestone' }, 500);
+  }
+});
+
+/**
+ * GET /api/milestones/tree?project_id=1
+ * Get milestones as hierarchical tree structure
+ */
+milestones.get('/tree', async (c) => {
+  try {
+    const project_id = c.req.query('project_id');
+    
+    if (!project_id) {
+      return c.json<ApiResponse>({ success: false, error: 'project_id required' }, 400);
+    }
+    
+    // Get all milestones for the project
+    const { results } = await c.env.DB.prepare(
+      'SELECT * FROM milestones WHERE project_id = ? ORDER BY milestone_path, sequence_order'
+    ).bind(project_id).all<Milestone>();
+    
+    // Build tree structure
+    const buildTree = (items: any[], parentId: number | null = null): any[] => {
+      return items
+        .filter((item: any) => item.parent_milestone_id === parentId)
+        .map((item: any) => ({
+          ...item,
+          children: buildTree(items, item.id)
+        }));
+    };
+    
+    const tree = buildTree(results);
+    
+    return c.json<ApiResponse>({ success: true, data: tree });
+  } catch (error) {
+    console.error('Get milestone tree error:', error);
+    return c.json<ApiResponse>({ success: false, error: 'Failed to fetch milestone tree' }, 500);
   }
 });
 
