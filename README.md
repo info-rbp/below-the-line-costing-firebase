@@ -6,6 +6,13 @@
 
 ### Key Features
 
+- **6-Step Project Creation Wizard**: Complete wizard for creating projects from scratch
+  - Step 1: Project Basics (code, name, client, dates, tax, G&A settings)
+  - Step 2: Milestones (dynamic milestone builder with add/remove)
+  - Step 3: Labour Costs (WBS builder with actual vs banded rate toggle)
+  - Step 4: Material Costs (cost type classification: milestone/monthly/one-time)
+  - Step 5: Payment Schedule (billing milestones with revenue tracking)
+  - Step 6: Review & Create (financial summary with margin validation)
 - **Project Management**: Track projects with client information, dates, and financial settings
 - **Personnel Register**: Manage staff database with hourly costs and banded rates
 - **Cost Tracking**: Labour cost line items with actual vs banded rate options
@@ -109,6 +116,16 @@ User:     user@jl2group.com / admin123
 - Recent projects table
 
 #### 2. Projects Management
+
+**Project Creation Wizard:**
+- Click "New Project" button to launch 6-step wizard
+- Step-by-step guided process for complete project setup
+- Real-time cost calculations throughout wizard
+- Validation at each step before proceeding
+- Financial summary with margin analysis before creation
+- Single atomic transaction creates all project data
+
+**Project Operations:**
 - Create/edit/delete projects
 - Set project parameters (dates, tax, G&A)
 - Track project status
@@ -188,6 +205,37 @@ Response: {
 **DELETE** `/api/projects/:id` - Delete project (Admin only)
 
 **POST** `/api/projects/:id/recalculate` - Recalculate totals
+
+**POST** `/api/projects/with-details` - Create project with all related data (Manager+)
+- Body: `{ project: {...}, milestones: [...], labour_costs: [...], material_costs: [...], payment_schedule: [...] }`
+- Single atomic transaction creates project and all related entities
+- Used by project creation wizard
+
+### Milestones
+
+**GET** `/api/milestones?project_id=1` - List milestones
+
+**GET** `/api/milestones/:id` - Get milestone details
+
+**POST** `/api/milestones` - Create milestone (Manager+)
+
+**POST** `/api/milestones/bulk` - Create multiple milestones (Manager+)
+
+**PUT** `/api/milestones/:id` - Update milestone (Manager+)
+
+**DELETE** `/api/milestones/:id` - Delete milestone (Manager+)
+
+### Rate Bands
+
+**GET** `/api/rate-bands?active=true` - List rate bands
+
+**GET** `/api/rate-bands/:id` - Get rate band details
+
+**POST** `/api/rate-bands` - Create rate band (Manager+)
+
+**PUT** `/api/rate-bands/:id` - Update rate band (Manager+)
+
+**DELETE** `/api/rate-bands/:id` - Delete rate band (Admin only)
 
 ### Personnel
 
@@ -484,6 +532,44 @@ Proprietary - JL2 Group
 **Version**: 1.0
 
 **Last Updated**: October 15, 2025
+
+## Current Status
+
+### ✅ Completed Features
+
+1. **Core Backend API** - All RESTful endpoints operational
+2. **Database Schema** - Complete with 13 tables and relationships
+3. **Authentication System** - JWT-based with role-based access control
+4. **Project Creation Wizard** - Full 6-step wizard implemented and integrated
+5. **Frontend Application** - SPA with dashboard, projects, personnel views
+6. **Cost Calculations** - Automatic G&A allocation and totals
+7. **Milestone Management** - CRUD operations with bulk creation
+8. **Rate Bands** - Role-based costing system
+9. **Personnel Register** - 30 employees pre-loaded from Excel
+
+### 🔄 In Development
+
+1. **UI/UX Testing** - Wizard needs browser testing and refinement
+2. **Form Validation** - Enhanced client-side validation in wizard
+3. **Error Handling** - Better error messages and recovery
+
+### ⏳ Pending Implementation
+
+1. **Xero Integration** - API credentials needed for activation
+2. **MS Project Integration** - XML parsing and import functionality
+3. **Project Editing** - Full edit wizard for existing projects
+4. **Cost Item Editing** - Direct editing of labour and material costs
+5. **Reports** - PDF export and financial reporting
+6. **Cash Flow Tracking** - Month-by-month cash flow management
+7. **Production Deployment** - Deploy to Cloudflare Pages
+
+### 🎯 Next Steps
+
+1. Test wizard in browser and fix UI issues
+2. Add project editing capabilities
+3. Implement cost item management UI
+4. Configure Xero API credentials
+5. Deploy to Cloudflare Pages production
 
 ---
 
