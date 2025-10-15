@@ -11,6 +11,8 @@ import costs from './routes/costs'
 import integrations from './routes/integrations'
 import milestones from './routes/milestones'
 import rateBands from './routes/rate-bands'
+import clients from './routes/clients'
+import materialsMaster from './routes/materials-master'
 
 const app = new Hono<{ Bindings: Env }>()
 
@@ -28,6 +30,8 @@ app.route('/api/costs', costs)
 app.route('/api/integrations', integrations)
 app.route('/api/milestones', milestones)
 app.route('/api/rate-bands', rateBands)
+app.route('/api/clients', clients)
+app.route('/api/materials-master', materialsMaster)
 
 // Health check
 app.get('/api/health', (c) => {
