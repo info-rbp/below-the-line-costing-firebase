@@ -352,6 +352,7 @@ const components = {
                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Client</th>
                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Dates</th>
                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Approval</th>
                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Cost</th>
                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Revenue</th>
                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Margin</th>
@@ -359,19 +360,50 @@ const components = {
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-200">
-              ${state.projects.map(project => `
+              ${state.projects.map(project => {
+                const approvalStatus = project.approval_status || 'approved';
+                const approvalColors = {
+                  'draft': 'bg-gray-100 text-gray-700 border border-gray-300',
+                  'pending_approval': 'bg-yellow-100 text-yellow-800 border border-yellow-300',
+                  'approved': 'bg-green-100 text-green-800 border border-green-300',
+                  'rejected': 'bg-red-100 text-red-800 border border-red-300'
+                };
+                const approvalIcons = {
+                  'draft': 'fa-file-alt',
+                  'pending_approval': 'fa-clock',
+                  'approved': 'fa-check-circle',
+                  'rejected': 'fa-times-circle'
+                };
+                
+                return `
                 <tr class="hover:bg-gray-50">
                   <td class="px-4 py-3 text-sm font-medium text-gray-900">${project.project_code}</td>
                   <td class="px-4 py-3 text-sm text-gray-900">${project.project_name}</td>
                   <td class="px-4 py-3 text-sm text-gray-600">${project.client_name}</td>
-                  <td class="px-4 py-3 text-sm text-gray-600">${project.start_date} to ${project.end_date}</td>
+                  <td class="px-4 py-3 text-sm text-gray-600">
+                    <div class="text-xs">${project.start_date}</div>
+                    <div class="text-xs text-gray-500">to ${project.end_date}</div>
+                  </td>
                   <td class="px-4 py-3 text-sm">
                     <span class="px-2 py-1 text-xs rounded-full ${
                       project.status === 'active' ? 'bg-green-100 text-green-800' :
                       project.status === 'completed' ? 'bg-blue-100 text-blue-800' :
+                      project.status === 'on-hold' ? 'bg-orange-100 text-orange-800' :
                       'bg-gray-100 text-gray-800'
                     }">
+                      <i class="fas ${
+                        project.status === 'active' ? 'fa-play-circle' :
+                        project.status === 'completed' ? 'fa-check-circle' :
+                        project.status === 'on-hold' ? 'fa-pause-circle' :
+                        'fa-circle'
+                      } mr-1"></i>
                       ${project.status}
+                    </span>
+                  </td>
+                  <td class="px-4 py-3 text-sm">
+                    <span class="px-2 py-1 text-xs rounded-full ${approvalColors[approvalStatus]}">
+                      <i class="fas ${approvalIcons[approvalStatus]} mr-1"></i>
+                      ${approvalStatus === 'pending_approval' ? 'Pending' : approvalStatus.charAt(0).toUpperCase() + approvalStatus.slice(1)}
                     </span>
                   </td>
                   <td class="px-4 py-3 text-sm text-gray-900">$${(project.total_cost || 0).toLocaleString()}</td>
@@ -388,7 +420,8 @@ const components = {
                     </button>
                   </td>
                 </tr>
-              `).join('')}
+              `;
+              }).join('')}
             </tbody>
           </table>
         </div>
