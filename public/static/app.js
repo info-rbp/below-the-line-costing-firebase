@@ -199,6 +199,11 @@ const components = {
             <a href="#" onclick="showView('personnel')" class="flex items-center px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg mb-1">
               <i class="fas fa-users mr-3"></i> Personnel
             </a>
+            ${['admin', 'manager'].includes(state.user?.role) ? `
+              <a href="#" onclick="showView('manager-settings')" class="flex items-center px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg mb-1">
+                <i class="fas fa-cog mr-3"></i> Manager Settings
+              </a>
+            ` : ''}
             <a href="#" onclick="showView('integrations')" class="flex items-center px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg mb-1">
               <i class="fas fa-plug mr-3"></i> Integrations
             </a>
@@ -535,6 +540,295 @@ const components = {
         </div>
       </div>
     `;
+  },
+  
+  // Manager Settings view
+  managerSettingsView() {
+    return `
+      <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-2">Manager Settings</h1>
+        <p class="text-gray-600">Manage clients, materials, employees, and system settings</p>
+      </div>
+      
+      <!-- Settings Tabs -->
+      <div class="mb-6 border-b border-gray-200">
+        <nav class="-mb-px flex space-x-8">
+          <a href="#" onclick="showManagerTab('clients')" id="tab-clients" class="manager-tab border-b-2 border-blue-500 py-4 px-1 text-sm font-medium text-blue-600">
+            <i class="fas fa-building mr-2"></i> Clients (CRM)
+          </a>
+          <a href="#" onclick="showManagerTab('materials')" id="tab-materials" class="manager-tab border-b-2 border-transparent py-4 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300">
+            <i class="fas fa-boxes mr-2"></i> Materials Master
+          </a>
+          <a href="#" onclick="showManagerTab('employees')" id="tab-employees" class="manager-tab border-b-2 border-transparent py-4 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300">
+            <i class="fas fa-user-tie mr-2"></i> Employees
+          </a>
+          <a href="#" onclick="showManagerTab('system')" id="tab-system" class="manager-tab border-b-2 border-transparent py-4 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300">
+            <i class="fas fa-cogs mr-2"></i> System Settings
+          </a>
+        </nav>
+      </div>
+      
+      <!-- Tab Content -->
+      <div id="managerTabContent">
+        ${this.clientsTabContent()}
+      </div>
+    `;
+  },
+  
+  // Clients Tab Content
+  clientsTabContent() {
+    return `
+      <div class="card p-6">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-xl font-bold text-gray-800">
+            <i class="fas fa-building text-blue-600 mr-2"></i> Client Database (CRM)
+          </h2>
+          <button onclick="showAddClientModal()" class="btn-primary">
+            <i class="fas fa-plus mr-2"></i> Add New Client
+          </button>
+        </div>
+        
+        <!-- Search and Filters -->
+        <div class="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+          <input type="text" id="clientSearch" placeholder="Search clients..." 
+                 onkeyup="filterClients()"
+                 class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+          <select id="clientTypeFilter" onchange="filterClients()" 
+                  class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            <option value="">All Types</option>
+            <option value="Corporate">Corporate</option>
+            <option value="Government">Government</option>
+            <option value="NGO">NGO</option>
+            <option value="Individual">Individual</option>
+          </select>
+          <select id="clientIndustryFilter" onchange="filterClients()" 
+                  class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            <option value="">All Industries</option>
+            <option value="Construction">Construction</option>
+            <option value="Infrastructure">Infrastructure</option>
+            <option value="Energy">Energy</option>
+            <option value="Technology">Technology</option>
+            <option value="Healthcare">Healthcare</option>
+          </select>
+          <select id="clientStatusFilter" onchange="filterClients()" 
+                  class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            <option value="">All Status</option>
+            <option value="active">Active Only</option>
+            <option value="inactive">Inactive Only</option>
+          </select>
+        </div>
+        
+        <!-- Clients Table -->
+        <div class="overflow-x-auto">
+          <table class="w-full" id="clientsTable">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Client Code</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Client Name</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Industry</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contact</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Projects</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200" id="clientsTableBody">
+              <tr>
+                <td colspan="8" class="px-4 py-8 text-center text-gray-500">
+                  <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                  <p>Loading clients...</p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  },
+  
+  // Materials Tab Content
+  materialsTabContent() {
+    return `
+      <div class="card p-6">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-xl font-bold text-gray-800">
+            <i class="fas fa-boxes text-green-600 mr-2"></i> Materials Master Catalog
+          </h2>
+          <button onclick="showAddMaterialModal()" class="btn-primary">
+            <i class="fas fa-plus mr-2"></i> Add New Material
+          </button>
+        </div>
+        
+        <!-- Search and Filters -->
+        <div class="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+          <input type="text" id="materialSearch" placeholder="Search materials..." 
+                 onkeyup="filterMaterials()"
+                 class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+          <select id="materialCategoryFilter" onchange="filterMaterials()" 
+                  class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            <option value="">All Categories</option>
+            <option value="Equipment">Equipment</option>
+            <option value="Software">Software</option>
+            <option value="Services">Services</option>
+            <option value="Consumables">Consumables</option>
+            <option value="Hardware">Hardware</option>
+          </select>
+          <select id="materialCostTypeFilter" onchange="filterMaterials()" 
+                  class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            <option value="">All Cost Types</option>
+            <option value="one-time">One-time</option>
+            <option value="monthly">Monthly</option>
+            <option value="annual">Annual</option>
+          </select>
+          <select id="materialStatusFilter" onchange="filterMaterials()" 
+                  class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            <option value="">All Status</option>
+            <option value="active">Active Only</option>
+            <option value="inactive">Inactive Only</option>
+          </select>
+        </div>
+        
+        <!-- Materials Table -->
+        <div class="overflow-x-auto">
+          <table class="w-full" id="materialsTable">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Material Code</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Material Name</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cost</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unit</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cost Type</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200" id="materialsTableBody">
+              <tr>
+                <td colspan="8" class="px-4 py-8 text-center text-gray-500">
+                  <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                  <p>Loading materials...</p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  },
+  
+  // Employees Tab Content
+  employeesTabContent() {
+    return `
+      <div class="card p-6">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-xl font-bold text-gray-800">
+            <i class="fas fa-user-tie text-purple-600 mr-2"></i> Employee Master List
+          </h2>
+          <button onclick="showAddEmployeeModal()" class="btn-primary">
+            <i class="fas fa-plus mr-2"></i> Add New Employee
+          </button>
+        </div>
+        
+        <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
+          <p class="text-sm text-blue-700">
+            <i class="fas fa-info-circle mr-2"></i>
+            This section manages the master employee list used for project assignments. This is different from system users.
+          </p>
+        </div>
+        
+        <!-- Employee filters will be added when personnel API is enhanced -->
+        <div class="text-center py-12 text-gray-500">
+          <i class="fas fa-users text-4xl mb-4"></i>
+          <p>Employee management interface coming soon</p>
+          <p class="text-sm mt-2">This will allow managing employee details, rates, and availability</p>
+        </div>
+      </div>
+    `;
+  },
+  
+  // System Settings Tab Content
+  systemSettingsTabContent() {
+    return `
+      <div class="card p-6">
+        <h2 class="text-xl font-bold text-gray-800 mb-6">
+          <i class="fas fa-cogs text-gray-600 mr-2"></i> System Configuration
+        </h2>
+        
+        <div class="space-y-6">
+          <!-- General Settings -->
+          <div class="border-b border-gray-200 pb-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">General Settings</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Default Currency</label>
+                <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                  <option value="USD">USD - US Dollar</option>
+                  <option value="EUR">EUR - Euro</option>
+                  <option value="GBP">GBP - British Pound</option>
+                  <option value="AUD">AUD - Australian Dollar</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Default Margin %</label>
+                <input type="number" value="20" step="0.1" 
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+              </div>
+            </div>
+          </div>
+          
+          <!-- Approval Workflow -->
+          <div class="border-b border-gray-200 pb-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Approval Workflow</h3>
+            <div class="space-y-4">
+              <div class="flex items-center">
+                <input type="checkbox" id="requireApproval" checked 
+                       class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                <label for="requireApproval" class="ml-2 text-sm text-gray-700">
+                  Require manager approval for new projects
+                </label>
+              </div>
+              <div class="flex items-center">
+                <input type="checkbox" id="autoNotify" checked 
+                       class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                <label for="autoNotify" class="ml-2 text-sm text-gray-700">
+                  Auto-notify managers when projects are submitted
+                </label>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Project Defaults -->
+          <div class="pb-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Project Defaults</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Default Project Status</label>
+                <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                  <option value="draft">Draft</option>
+                  <option value="active">Active</option>
+                  <option value="planning">Planning</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Auto-generate Project Codes</label>
+                <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          
+          <div class="flex justify-end">
+            <button onclick="saveSystemSettings()" class="btn-primary">
+              <i class="fas fa-save mr-2"></i> Save Settings
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
   }
 };
 
@@ -603,6 +897,10 @@ function showView(view) {
       mainContent.innerHTML = components.projectsView();
     } else if (view === 'personnel') {
       mainContent.innerHTML = components.personnelView();
+    } else if (view === 'manager-settings') {
+      mainContent.innerHTML = components.managerSettingsView();
+      // Load clients data when entering manager settings
+      loadClientsData();
     } else if (view === 'integrations') {
       mainContent.innerHTML = components.integrationsView();
     }
@@ -678,6 +976,290 @@ async function checkMSPStatus() {
 
 function uploadMSPFile() {
   alert('MS Project file upload - To be implemented\n\nExport your project as XML from Microsoft Project and upload here.');
+}
+
+// Manager Settings Functions
+let managedData = {
+  clients: [],
+  materials: [],
+  filteredClients: [],
+  filteredMaterials: []
+};
+
+function showManagerTab(tab) {
+  // Update tab styling
+  document.querySelectorAll('.manager-tab').forEach(t => {
+    t.classList.remove('border-blue-500', 'text-blue-600');
+    t.classList.add('border-transparent', 'text-gray-500');
+  });
+  document.getElementById(`tab-${tab}`).classList.remove('border-transparent', 'text-gray-500');
+  document.getElementById(`tab-${tab}`).classList.add('border-blue-500', 'text-blue-600');
+  
+  // Update content
+  const contentDiv = document.getElementById('managerTabContent');
+  if (tab === 'clients') {
+    contentDiv.innerHTML = components.clientsTabContent();
+    loadClientsData();
+  } else if (tab === 'materials') {
+    contentDiv.innerHTML = components.materialsTabContent();
+    loadMaterialsData();
+  } else if (tab === 'employees') {
+    contentDiv.innerHTML = components.employeesTabContent();
+  } else if (tab === 'system') {
+    contentDiv.innerHTML = components.systemSettingsTabContent();
+  }
+}
+
+async function loadClientsData() {
+  try {
+    const response = await api.request('/clients');
+    if (response.success) {
+      managedData.clients = response.data;
+      managedData.filteredClients = response.data;
+      renderClientsTable();
+    }
+  } catch (error) {
+    console.error('Failed to load clients:', error);
+    document.getElementById('clientsTableBody').innerHTML = `
+      <tr>
+        <td colspan="8" class="px-4 py-8 text-center text-red-500">
+          <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
+          <p>Failed to load clients</p>
+        </td>
+      </tr>
+    `;
+  }
+}
+
+function renderClientsTable() {
+  const tbody = document.getElementById('clientsTableBody');
+  if (!tbody) return;
+  
+  if (managedData.filteredClients.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="8" class="px-4 py-8 text-center text-gray-500">
+          <i class="fas fa-inbox text-2xl mb-2"></i>
+          <p>No clients found</p>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+  
+  tbody.innerHTML = managedData.filteredClients.map(client => `
+    <tr class="hover:bg-gray-50">
+      <td class="px-4 py-3 text-sm font-medium text-gray-900">${client.client_code}</td>
+      <td class="px-4 py-3 text-sm text-gray-900">${client.client_name}</td>
+      <td class="px-4 py-3 text-sm text-gray-600">${client.client_type || '-'}</td>
+      <td class="px-4 py-3 text-sm text-gray-600">${client.industry || '-'}</td>
+      <td class="px-4 py-3 text-sm text-gray-600">
+        ${client.primary_contact_name ? `
+          <div>${client.primary_contact_name}</div>
+          <div class="text-xs text-gray-500">${client.primary_contact_email || ''}</div>
+        ` : '-'}
+      </td>
+      <td class="px-4 py-3 text-sm text-center">
+        <button onclick="viewClientProjects(${client.id})" class="text-blue-600 hover:text-blue-800">
+          <i class="fas fa-folder mr-1"></i> View
+        </button>
+      </td>
+      <td class="px-4 py-3 text-sm">
+        <span class="px-2 py-1 text-xs rounded-full ${client.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">
+          ${client.is_active ? 'Active' : 'Inactive'}
+        </span>
+      </td>
+      <td class="px-4 py-3 text-sm">
+        <button onclick="editClient(${client.id})" class="text-blue-600 hover:text-blue-800 mr-3">
+          <i class="fas fa-edit"></i>
+        </button>
+        <button onclick="deleteClient(${client.id})" class="text-red-600 hover:text-red-800">
+          <i class="fas fa-trash"></i>
+        </button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function filterClients() {
+  const search = document.getElementById('clientSearch')?.value.toLowerCase() || '';
+  const typeFilter = document.getElementById('clientTypeFilter')?.value || '';
+  const industryFilter = document.getElementById('clientIndustryFilter')?.value || '';
+  const statusFilter = document.getElementById('clientStatusFilter')?.value || '';
+  
+  managedData.filteredClients = managedData.clients.filter(client => {
+    const matchesSearch = !search || 
+      client.client_name.toLowerCase().includes(search) || 
+      client.client_code.toLowerCase().includes(search);
+    const matchesType = !typeFilter || client.client_type === typeFilter;
+    const matchesIndustry = !industryFilter || client.industry === industryFilter;
+    const matchesStatus = !statusFilter || 
+      (statusFilter === 'active' && client.is_active) || 
+      (statusFilter === 'inactive' && !client.is_active);
+    
+    return matchesSearch && matchesType && matchesIndustry && matchesStatus;
+  });
+  
+  renderClientsTable();
+}
+
+async function loadMaterialsData() {
+  try {
+    const response = await api.request('/materials-master');
+    if (response.success) {
+      managedData.materials = response.data;
+      managedData.filteredMaterials = response.data;
+      renderMaterialsTable();
+    }
+  } catch (error) {
+    console.error('Failed to load materials:', error);
+    document.getElementById('materialsTableBody').innerHTML = `
+      <tr>
+        <td colspan="8" class="px-4 py-8 text-center text-red-500">
+          <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
+          <p>Failed to load materials</p>
+        </td>
+      </tr>
+    `;
+  }
+}
+
+function renderMaterialsTable() {
+  const tbody = document.getElementById('materialsTableBody');
+  if (!tbody) return;
+  
+  if (managedData.filteredMaterials.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="8" class="px-4 py-8 text-center text-gray-500">
+          <i class="fas fa-inbox text-2xl mb-2"></i>
+          <p>No materials found</p>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+  
+  tbody.innerHTML = managedData.filteredMaterials.map(material => `
+    <tr class="hover:bg-gray-50">
+      <td class="px-4 py-3 text-sm font-medium text-gray-900">${material.material_code}</td>
+      <td class="px-4 py-3 text-sm text-gray-900">${material.material_name}</td>
+      <td class="px-4 py-3 text-sm text-gray-600">${material.material_category || '-'}</td>
+      <td class="px-4 py-3 text-sm text-gray-900 font-medium">$${parseFloat(material.default_unit_cost).toLocaleString()}</td>
+      <td class="px-4 py-3 text-sm text-gray-600">${material.unit_of_measure}</td>
+      <td class="px-4 py-3 text-sm">
+        <span class="px-2 py-1 text-xs rounded-full ${
+          material.default_cost_type === 'one-time' ? 'bg-blue-100 text-blue-800' : 
+          material.default_cost_type === 'monthly' ? 'bg-purple-100 text-purple-800' : 
+          'bg-orange-100 text-orange-800'
+        }">
+          ${material.default_cost_type}
+        </span>
+      </td>
+      <td class="px-4 py-3 text-sm">
+        <span class="px-2 py-1 text-xs rounded-full ${material.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">
+          ${material.is_active ? 'Active' : 'Inactive'}
+        </span>
+      </td>
+      <td class="px-4 py-3 text-sm">
+        <button onclick="editMaterial(${material.id})" class="text-blue-600 hover:text-blue-800 mr-3">
+          <i class="fas fa-edit"></i>
+        </button>
+        <button onclick="deleteMaterial(${material.id})" class="text-red-600 hover:text-red-800">
+          <i class="fas fa-trash"></i>
+        </button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function filterMaterials() {
+  const search = document.getElementById('materialSearch')?.value.toLowerCase() || '';
+  const categoryFilter = document.getElementById('materialCategoryFilter')?.value || '';
+  const costTypeFilter = document.getElementById('materialCostTypeFilter')?.value || '';
+  const statusFilter = document.getElementById('materialStatusFilter')?.value || '';
+  
+  managedData.filteredMaterials = managedData.materials.filter(material => {
+    const matchesSearch = !search || 
+      material.material_name.toLowerCase().includes(search) || 
+      material.material_code.toLowerCase().includes(search);
+    const matchesCategory = !categoryFilter || material.material_category === categoryFilter;
+    const matchesCostType = !costTypeFilter || material.default_cost_type === costTypeFilter;
+    const matchesStatus = !statusFilter || 
+      (statusFilter === 'active' && material.is_active) || 
+      (statusFilter === 'inactive' && !material.is_active);
+    
+    return matchesSearch && matchesCategory && matchesCostType && matchesStatus;
+  });
+  
+  renderMaterialsTable();
+}
+
+// Modal and CRUD Functions (placeholders for now)
+function showAddClientModal() {
+  alert('Add Client Modal - Full implementation coming next');
+}
+
+function editClient(id) {
+  const client = managedData.clients.find(c => c.id === id);
+  alert(`Edit Client: ${client?.client_name}\n\nFull edit modal coming next`);
+}
+
+async function deleteClient(id) {
+  if (!confirm('Are you sure you want to delete this client?')) return;
+  
+  try {
+    const response = await api.request(`/clients/${id}`, { method: 'DELETE' });
+    if (response.success) {
+      alert('Client deleted successfully');
+      await loadClientsData();
+    }
+  } catch (error) {
+    alert('Failed to delete client');
+  }
+}
+
+async function viewClientProjects(id) {
+  try {
+    const response = await api.request(`/clients/${id}/projects`);
+    if (response.success) {
+      const { projects, summary } = response.data;
+      alert(`Client Projects:\n\nTotal: ${summary.total_projects}\nRevenue: $${summary.total_revenue.toLocaleString()}\nAvg Margin: ${summary.average_margin.toFixed(1)}%`);
+    }
+  } catch (error) {
+    alert('Failed to load client projects');
+  }
+}
+
+function showAddMaterialModal() {
+  alert('Add Material Modal - Full implementation coming next');
+}
+
+function editMaterial(id) {
+  const material = managedData.materials.find(m => m.id === id);
+  alert(`Edit Material: ${material?.material_name}\n\nFull edit modal coming next`);
+}
+
+async function deleteMaterial(id) {
+  if (!confirm('Are you sure you want to delete this material?')) return;
+  
+  try {
+    const response = await api.request(`/materials-master/${id}`, { method: 'DELETE' });
+    if (response.success) {
+      alert('Material deleted successfully');
+      await loadMaterialsData();
+    }
+  } catch (error) {
+    alert('Failed to delete material');
+  }
+}
+
+function showAddEmployeeModal() {
+  alert('Add Employee Modal - Coming soon');
+}
+
+function saveSystemSettings() {
+  alert('System settings saved!\n\nNote: Full backend integration coming soon');
 }
 
 // Initialize app
