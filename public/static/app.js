@@ -1195,14 +1195,228 @@ function filterMaterials() {
   renderMaterialsTable();
 }
 
-// Modal and CRUD Functions (placeholders for now)
+// Modal and CRUD Functions
 function showAddClientModal() {
-  alert('Add Client Modal - Full implementation coming next');
+  showClientModal();
 }
 
 function editClient(id) {
   const client = managedData.clients.find(c => c.id === id);
-  alert(`Edit Client: ${client?.client_name}\n\nFull edit modal coming next`);
+  if (client) {
+    showClientModal(client);
+  }
+}
+
+function showClientModal(clientData = null) {
+  const isEdit = !!clientData;
+  const title = isEdit ? 'Edit Client' : 'Add New Client';
+  
+  const modalHTML = `
+    <div id="clientModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center overflow-y-auto">
+      <div class="bg-white rounded-lg shadow-xl w-full max-w-3xl m-4 max-h-[90vh] overflow-y-auto">
+        <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+          <h2 class="text-2xl font-bold text-gray-800">
+            <i class="fas fa-building text-blue-600 mr-2"></i>${title}
+          </h2>
+          <button onclick="closeClientModal()" class="text-gray-400 hover:text-gray-600">
+            <i class="fas fa-times text-xl"></i>
+          </button>
+        </div>
+        
+        <form id="clientForm" class="p-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Basic Information -->
+            <div class="md:col-span-2">
+              <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">Basic Information</h3>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Client Code <span class="text-red-500">*</span>
+              </label>
+              <input type="text" name="client_code" required
+                     value="${clientData?.client_code || ''}"
+                     ${isEdit ? 'readonly' : ''}
+                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${isEdit ? 'bg-gray-100' : ''}">
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Client Name <span class="text-red-500">*</span>
+              </label>
+              <input type="text" name="client_name" required
+                     value="${clientData?.client_name || ''}"
+                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Client Type</label>
+              <select name="client_type"
+                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                <option value="">Select Type</option>
+                <option value="Corporate" ${clientData?.client_type === 'Corporate' ? 'selected' : ''}>Corporate</option>
+                <option value="Government" ${clientData?.client_type === 'Government' ? 'selected' : ''}>Government</option>
+                <option value="NGO" ${clientData?.client_type === 'NGO' ? 'selected' : ''}>NGO</option>
+                <option value="Individual" ${clientData?.client_type === 'Individual' ? 'selected' : ''}>Individual</option>
+              </select>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Industry</label>
+              <select name="industry"
+                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                <option value="">Select Industry</option>
+                <option value="Construction" ${clientData?.industry === 'Construction' ? 'selected' : ''}>Construction</option>
+                <option value="Infrastructure" ${clientData?.industry === 'Infrastructure' ? 'selected' : ''}>Infrastructure</option>
+                <option value="Energy" ${clientData?.industry === 'Energy' ? 'selected' : ''}>Energy</option>
+                <option value="Technology" ${clientData?.industry === 'Technology' ? 'selected' : ''}>Technology</option>
+                <option value="Healthcare" ${clientData?.industry === 'Healthcare' ? 'selected' : ''}>Healthcare</option>
+                <option value="Manufacturing" ${clientData?.industry === 'Manufacturing' ? 'selected' : ''}>Manufacturing</option>
+              </select>
+            </div>
+            
+            <!-- Contact Information -->
+            <div class="md:col-span-2 mt-4">
+              <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">Contact Information</h3>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Primary Contact Name</label>
+              <input type="text" name="primary_contact_name"
+                     value="${clientData?.primary_contact_name || ''}"
+                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Primary Contact Email</label>
+              <input type="email" name="primary_contact_email"
+                     value="${clientData?.primary_contact_email || ''}"
+                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Primary Contact Phone</label>
+              <input type="tel" name="primary_contact_phone"
+                     value="${clientData?.primary_contact_phone || ''}"
+                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Website</label>
+              <input type="url" name="website"
+                     value="${clientData?.website || ''}"
+                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
+            
+            <!-- Address -->
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Address</label>
+              <textarea name="address" rows="2"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">${clientData?.address || ''}</textarea>
+            </div>
+            
+            <!-- Financial Information -->
+            <div class="md:col-span-2 mt-4">
+              <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">Financial Information</h3>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Payment Terms</label>
+              <input type="text" name="payment_terms"
+                     value="${clientData?.payment_terms || ''}"
+                     placeholder="e.g., Net 30, 50% upfront"
+                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Credit Limit</label>
+              <input type="number" name="credit_limit" step="0.01"
+                     value="${clientData?.credit_limit || ''}"
+                     placeholder="0.00"
+                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
+            
+            <!-- Status -->
+            <div class="md:col-span-2">
+              <div class="flex items-center">
+                <input type="checkbox" name="is_active" id="client_is_active"
+                       ${!clientData || clientData.is_active ? 'checked' : ''}
+                       class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                <label for="client_is_active" class="ml-2 text-sm text-gray-700">
+                  Active Client
+                </label>
+              </div>
+            </div>
+            
+            <!-- Notes -->
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+              <textarea name="notes" rows="3"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">${clientData?.notes || ''}</textarea>
+            </div>
+          </div>
+          
+          <div class="flex justify-end space-x-3 mt-6 pt-6 border-t border-gray-200">
+            <button type="button" onclick="closeClientModal()"
+                    class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
+              Cancel
+            </button>
+            <button type="submit"
+                    class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+              <i class="fas fa-save mr-2"></i>${isEdit ? 'Update' : 'Create'} Client
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  `;
+  
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
+  
+  // Add form submit handler
+  document.getElementById('clientForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const clientPayload = {
+      client_code: formData.get('client_code'),
+      client_name: formData.get('client_name'),
+      client_type: formData.get('client_type') || null,
+      industry: formData.get('industry') || null,
+      primary_contact_name: formData.get('primary_contact_name') || null,
+      primary_contact_email: formData.get('primary_contact_email') || null,
+      primary_contact_phone: formData.get('primary_contact_phone') || null,
+      website: formData.get('website') || null,
+      address: formData.get('address') || null,
+      payment_terms: formData.get('payment_terms') || null,
+      credit_limit: formData.get('credit_limit') ? parseFloat(formData.get('credit_limit')) : null,
+      is_active: formData.get('is_active') === 'on',
+      notes: formData.get('notes') || null
+    };
+    
+    try {
+      const endpoint = isEdit ? `/clients/${clientData.id}` : '/clients';
+      const method = isEdit ? 'PUT' : 'POST';
+      const response = await api.request(endpoint, { 
+        method, 
+        body: clientPayload 
+      });
+      
+      if (response.success) {
+        alert(`Client ${isEdit ? 'updated' : 'created'} successfully!`);
+        closeClientModal();
+        await loadClientsData();
+      }
+    } catch (error) {
+      alert(`Failed to ${isEdit ? 'update' : 'create'} client: ${error.error || 'Unknown error'}`);
+    }
+  });
+}
+
+function closeClientModal() {
+  const modal = document.getElementById('clientModal');
+  if (modal) {
+    modal.remove();
+  }
 }
 
 async function deleteClient(id) {
@@ -1232,12 +1446,208 @@ async function viewClientProjects(id) {
 }
 
 function showAddMaterialModal() {
-  alert('Add Material Modal - Full implementation coming next');
+  showMaterialModal();
 }
 
 function editMaterial(id) {
   const material = managedData.materials.find(m => m.id === id);
-  alert(`Edit Material: ${material?.material_name}\n\nFull edit modal coming next`);
+  if (material) {
+    showMaterialModal(material);
+  }
+}
+
+function showMaterialModal(materialData = null) {
+  const isEdit = !!materialData;
+  const title = isEdit ? 'Edit Material' : 'Add New Material';
+  
+  const modalHTML = `
+    <div id="materialModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center overflow-y-auto">
+      <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl m-4 max-h-[90vh] overflow-y-auto">
+        <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+          <h2 class="text-2xl font-bold text-gray-800">
+            <i class="fas fa-boxes text-green-600 mr-2"></i>${title}
+          </h2>
+          <button onclick="closeMaterialModal()" class="text-gray-400 hover:text-gray-600">
+            <i class="fas fa-times text-xl"></i>
+          </button>
+        </div>
+        
+        <form id="materialForm" class="p-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Basic Information -->
+            <div class="md:col-span-2">
+              <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">Basic Information</h3>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Material Code <span class="text-red-500">*</span>
+              </label>
+              <input type="text" name="material_code" required
+                     value="${materialData?.material_code || ''}"
+                     ${isEdit ? 'readonly' : ''}
+                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${isEdit ? 'bg-gray-100' : ''}">
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Material Name <span class="text-red-500">*</span>
+              </label>
+              <input type="text" name="material_name" required
+                     value="${materialData?.material_name || ''}"
+                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
+              <select name="material_category"
+                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                <option value="">Select Category</option>
+                <option value="Equipment" ${materialData?.material_category === 'Equipment' ? 'selected' : ''}>Equipment</option>
+                <option value="Software" ${materialData?.material_category === 'Software' ? 'selected' : ''}>Software</option>
+                <option value="Services" ${materialData?.material_category === 'Services' ? 'selected' : ''}>Services</option>
+                <option value="Consumables" ${materialData?.material_category === 'Consumables' ? 'selected' : ''}>Consumables</option>
+                <option value="Hardware" ${materialData?.material_category === 'Hardware' ? 'selected' : ''}>Hardware</option>
+              </select>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Supplier Name</label>
+              <input type="text" name="supplier_name"
+                     value="${materialData?.supplier_name || ''}"
+                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+            </div>
+            
+            <!-- Pricing Information -->
+            <div class="md:col-span-2 mt-4">
+              <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">Pricing Information</h3>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Default Unit Cost <span class="text-red-500">*</span>
+              </label>
+              <input type="number" name="default_unit_cost" required step="0.01"
+                     value="${materialData?.default_unit_cost || ''}"
+                     placeholder="0.00"
+                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Unit of Measure <span class="text-red-500">*</span>
+              </label>
+              <input type="text" name="unit_of_measure" required
+                     value="${materialData?.unit_of_measure || ''}"
+                     placeholder="e.g., each, license, month, hour"
+                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Cost Type</label>
+              <select name="default_cost_type"
+                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                <option value="one-time" ${!materialData || materialData.default_cost_type === 'one-time' ? 'selected' : ''}>One-time</option>
+                <option value="monthly" ${materialData?.default_cost_type === 'monthly' ? 'selected' : ''}>Monthly</option>
+                <option value="annual" ${materialData?.default_cost_type === 'annual' ? 'selected' : ''}>Annual</option>
+              </select>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Minimum Order Quantity</label>
+              <input type="number" name="minimum_order_qty" step="1"
+                     value="${materialData?.minimum_order_qty || ''}"
+                     placeholder="1"
+                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Lead Time (days)</label>
+              <input type="number" name="lead_time_days" step="1"
+                     value="${materialData?.lead_time_days || ''}"
+                     placeholder="0"
+                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+            </div>
+            
+            <!-- Status -->
+            <div class="md:col-span-2 mt-4">
+              <div class="flex items-center">
+                <input type="checkbox" name="is_active" id="material_is_active"
+                       ${!materialData || materialData.is_active ? 'checked' : ''}
+                       class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded">
+                <label for="material_is_active" class="ml-2 text-sm text-gray-700">
+                  Active Material
+                </label>
+              </div>
+            </div>
+            
+            <!-- Description -->
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+              <textarea name="description" rows="3"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">${materialData?.description || ''}</textarea>
+            </div>
+          </div>
+          
+          <div class="flex justify-end space-x-3 mt-6 pt-6 border-t border-gray-200">
+            <button type="button" onclick="closeMaterialModal()"
+                    class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
+              Cancel
+            </button>
+            <button type="submit"
+                    class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+              <i class="fas fa-save mr-2"></i>${isEdit ? 'Update' : 'Create'} Material
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  `;
+  
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
+  
+  // Add form submit handler
+  document.getElementById('materialForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const materialPayload = {
+      material_code: formData.get('material_code'),
+      material_name: formData.get('material_name'),
+      material_category: formData.get('material_category') || null,
+      default_unit_cost: parseFloat(formData.get('default_unit_cost')),
+      unit_of_measure: formData.get('unit_of_measure'),
+      supplier_name: formData.get('supplier_name') || null,
+      default_cost_type: formData.get('default_cost_type') || 'one-time',
+      minimum_order_qty: formData.get('minimum_order_qty') ? parseInt(formData.get('minimum_order_qty')) : null,
+      lead_time_days: formData.get('lead_time_days') ? parseInt(formData.get('lead_time_days')) : null,
+      is_active: formData.get('is_active') === 'on',
+      description: formData.get('description') || null
+    };
+    
+    try {
+      const endpoint = isEdit ? `/materials-master/${materialData.id}` : '/materials-master';
+      const method = isEdit ? 'PUT' : 'POST';
+      const response = await api.request(endpoint, { 
+        method, 
+        body: materialPayload 
+      });
+      
+      if (response.success) {
+        alert(`Material ${isEdit ? 'updated' : 'created'} successfully!`);
+        closeMaterialModal();
+        await loadMaterialsData();
+      }
+    } catch (error) {
+      alert(`Failed to ${isEdit ? 'update' : 'create'} material: ${error.error || 'Unknown error'}`);
+    }
+  });
+}
+
+function closeMaterialModal() {
+  const modal = document.getElementById('materialModal');
+  if (modal) {
+    modal.remove();
+  }
 }
 
 async function deleteMaterial(id) {
