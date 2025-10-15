@@ -1,12 +1,12 @@
 -- Seed Data for BTL Costing Application
 -- Extracted from JL2G BTL Costing Sheet V.29
 
--- Insert default admin user (password: admin123 - bcrypt hashed)
+-- Insert default admin user (password: admin123 - SHA256 hashed with salt)
 -- Note: In production, users will set their own passwords
 INSERT OR IGNORE INTO users (id, email, password_hash, full_name, role, is_active) VALUES 
-  (1, 'admin@jl2group.com', '$2a$10$rKzX8vQHQGZpUQY5hVHlIuY4oG3LZ5vBxZ1RqN4FmXK6TlQR5xRUK', 'Admin User', 'admin', 1),
-  (2, 'manager@jl2group.com', '$2a$10$rKzX8vQHQGZpUQY5hVHlIuY4oG3LZ5vBxZ1RqN4FmXK6TlQR5xRUK', 'Project Manager', 'manager', 1),
-  (3, 'user@jl2group.com', '$2a$10$rKzX8vQHQGZpUQY5hVHlIuY4oG3LZ5vBxZ1RqN4FmXK6TlQR5xRUK', 'Standard User', 'user', 1);
+  (1, 'admin@jl2group.com', 'c113ac70-08a7-42f1-ba5f-1ebd08306c39:7aeeef07c847ad8e42627418f9a301cf619b763a87adfc78c9b8a9f6e76b4f6e', 'Admin User', 'admin', 1),
+  (2, 'manager@jl2group.com', '62c8da87-f6d4-469e-b693-19c32082a16c:6906bf62080bd93bcb5772e21be6c06a72b2cc94c663ddcd7ee24c03dcb1a5fc', 'Project Manager', 'manager', 1),
+  (3, 'user@jl2group.com', '59cc1062-7e63-458c-833a-0f1132f707fa:3c474fd4c8434fc5d74a67c68b3e9a1d4a800db89d0f17cb1a9b3a600a7d1c7b', 'Standard User', 'user', 1);
 
 -- Insert Personnel from Excel "Drop Downs & Settings" sheet
 INSERT OR IGNORE INTO personnel (employee_id, employee_name, employee_role, employee_level, hourly_cost, banded_rate) VALUES
