@@ -4,6 +4,7 @@
 const ProjectWizard = {
   currentStep: 1,
   totalSteps: 6,
+  approvalAction: 'save_draft', // Default approval action
   
   // Wizard data state
   projectData: {
@@ -292,59 +293,119 @@ const ProjectWizard = {
     return `
       <h2 class="text-2xl font-bold text-gray-800 mb-6">
         <i class="fas fa-flag text-blue-600 mr-2"></i>
-        Project Milestones
+        Project Milestones - Hierarchical Structure
       </h2>
-      <p class="text-gray-600 mb-6">Define key milestones and deliverables for your project</p>
+      <p class="text-gray-600 mb-6">Build a hierarchical milestone tree with parent milestones and sub-milestones</p>
       
-      <div id="milestones-list" class="space-y-4 mb-6">
-        ${this.projectData.milestones.map((m, idx) => this.renderMilestoneItem(m, idx)).join('')}
-        ${this.projectData.milestones.length === 0 ? '<p class="text-gray-500 text-center py-8">No milestones added yet. Click "Add Milestone" to get started.</p>' : ''}
+      <div class="mb-4 p-4 bg-blue-50 border-l-4 border-blue-400 rounded">
+        <p class="text-sm text-blue-800">
+          <i class="fas fa-info-circle mr-2"></i>
+          <strong>Tip:</strong> Create parent milestones first, then add sub-milestones under them. You can nest up to 3 levels deep.
+        </p>
       </div>
       
-      <button type="button" onclick="ProjectWizard.addMilestone()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
-        <i class="fas fa-plus mr-2"></i> Add Milestone
-      </button>
+      <div id="milestones-list" class="space-y-3 mb-6">
+        ${this.renderMilestoneTree()}
+        ${this.projectData.milestones.length === 0 ? '<p class="text-gray-500 text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">No milestones added yet. Click "Add Root Milestone" to get started.</p>' : ''}
+      </div>
+      
+      <div class="flex gap-3">
+        <button type="button" onclick="ProjectWizard.addMilestone(null)" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+          <i class="fas fa-plus mr-2"></i> Add Root Milestone
+        </button>
+        <button type="button" onclick="ProjectWizard.toggleAllMilestones()" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition">
+          <i class="fas fa-expand-alt mr-2"></i> Expand/Collapse All
+        </button>
+      </div>
     `;
   },
   
-  renderMilestoneItem(milestone, index) {
+  renderMilestoneTree() {
+    // Get root milestones (no parent)
+    const rootMilestones = this.projectData.milestones.filter(m => !m.parent_milestone_id);
+    return rootMilestones.map(m => this.renderMilestoneItem(m, 0)).join('');
+  },
+  
+  renderMilestoneItem(milestone, level) {
+    const index = this.projectData.milestones.findIndex(m => m.milestone_code === milestone.milestone_code);
+    const hasChildren = this.projectData.milestones.some(m => m.parent_milestone_id === milestone.milestone_code);
+    const children = this.projectData.milestones.filter(m => m.parent_milestone_id === milestone.milestone_code);
+    const isExpanded = milestone.expanded !== false; // Default to expanded
+    
+    const indentClass = level === 0 ? '' : level === 1 ? 'ml-8' : level === 2 ? 'ml-16' : 'ml-24';
+    const bgColor = level === 0 ? 'bg-white' : level === 1 ? 'bg-blue-50' : level === 2 ? 'bg-green-50' : 'bg-yellow-50';
+    const borderColor = level === 0 ? 'border-blue-500' : level === 1 ? 'border-green-500' : level === 2 ? 'border-yellow-500' : 'border-gray-500';
+    
     return `
-      <div class="border border-gray-300 rounded-lg p-4 bg-white" data-milestone-index="${index}">
-        <div class="grid grid-cols-4 gap-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Milestone Code</label>
-            <input type="text" value="${milestone.milestone_code}" 
-              onchange="ProjectWizard.updateMilestone(${index}, 'milestone_code', this.value)"
-              placeholder="M0${index + 1}"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg">
-          </div>
-          <div class="col-span-2">
-            <label class="block text-sm font-medium text-gray-700 mb-1">Milestone Name</label>
-            <input type="text" value="${milestone.milestone_name}"
-              onchange="ProjectWizard.updateMilestone(${index}, 'milestone_name', this.value)"
-              placeholder="Project Kickoff"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg">
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Target Date</label>
-            <input type="date" value="${milestone.milestone_date || ''}"
-              onchange="ProjectWizard.updateMilestone(${index}, 'milestone_date', this.value)"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+      <div class="${indentClass}">
+        <div class="border-l-4 ${borderColor} rounded-lg p-4 ${bgColor} shadow-sm" data-milestone-index="${index}">
+          <div class="flex items-start gap-3">
+            ${hasChildren ? `
+              <button type="button" onclick="ProjectWizard.toggleMilestone(${index})" 
+                class="mt-2 text-gray-600 hover:text-gray-800 transition">
+                <i class="fas fa-chevron-${isExpanded ? 'down' : 'right'} text-sm"></i>
+              </button>
+            ` : '<div class="w-4"></div>'}
+            
+            <div class="flex-1">
+              <div class="grid grid-cols-12 gap-3">
+                <div class="col-span-2">
+                  <label class="block text-xs font-medium text-gray-700 mb-1">Code</label>
+                  <input type="text" value="${milestone.milestone_code}" 
+                    onchange="ProjectWizard.updateMilestone(${index}, 'milestone_code', this.value)"
+                    placeholder="M${level + 1}-${index + 1}"
+                    class="w-full px-2 py-1 border border-gray-300 rounded text-sm">
+                </div>
+                <div class="col-span-4">
+                  <label class="block text-xs font-medium text-gray-700 mb-1">Milestone Name</label>
+                  <input type="text" value="${milestone.milestone_name}"
+                    onchange="ProjectWizard.updateMilestone(${index}, 'milestone_name', this.value)"
+                    placeholder="${level === 0 ? 'Phase 1: Planning' : 'Task 1.1: Requirements'}"
+                    class="w-full px-2 py-1 border border-gray-300 rounded text-sm">
+                </div>
+                <div class="col-span-2">
+                  <label class="block text-xs font-medium text-gray-700 mb-1">Target Date</label>
+                  <input type="date" value="${milestone.milestone_date || ''}"
+                    onchange="ProjectWizard.updateMilestone(${index}, 'milestone_date', this.value)"
+                    class="w-full px-2 py-1 border border-gray-300 rounded text-sm">
+                </div>
+                <div class="col-span-3">
+                  <label class="block text-xs font-medium text-gray-700 mb-1">Description</label>
+                  <input type="text" value="${milestone.description || ''}"
+                    onchange="ProjectWizard.updateMilestone(${index}, 'description', this.value)"
+                    placeholder="Brief description"
+                    class="w-full px-2 py-1 border border-gray-300 rounded text-sm">
+                </div>
+                <div class="col-span-1 flex items-end gap-1">
+                  ${level < 2 ? `
+                    <button type="button" onclick="ProjectWizard.addMilestone('${milestone.milestone_code}')" 
+                      title="Add sub-milestone"
+                      class="bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700 transition text-xs">
+                      <i class="fas fa-plus"></i>
+                    </button>
+                  ` : ''}
+                  <button type="button" onclick="ProjectWizard.removeMilestone(${index})" 
+                    title="Delete milestone"
+                    class="bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700 transition text-xs">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </div>
+              
+              <div class="mt-2 flex items-center gap-4 text-xs text-gray-600">
+                <span><i class="fas fa-layer-group mr-1"></i> Level: ${level + 1}</span>
+                ${milestone.parent_milestone_id ? `<span><i class="fas fa-sitemap mr-1"></i> Parent: ${milestone.parent_milestone_id}</span>` : '<span><i class="fas fa-star mr-1"></i> Root Milestone</span>'}
+                ${hasChildren ? `<span class="text-blue-600"><i class="fas fa-code-branch mr-1"></i> ${children.length} sub-milestone(s)</span>` : ''}
+              </div>
+            </div>
           </div>
         </div>
-        <div class="mt-3 flex items-end gap-3">
-          <div class="flex-1">
-            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-            <input type="text" value="${milestone.description || ''}"
-              onchange="ProjectWizard.updateMilestone(${index}, 'description', this.value)"
-              placeholder="Initial setup and team onboarding"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+        
+        ${hasChildren && isExpanded ? `
+          <div class="mt-2">
+            ${children.map(child => this.renderMilestoneItem(child, level + 1)).join('')}
           </div>
-          <button type="button" onclick="ProjectWizard.removeMilestone(${index})" 
-            class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition">
-            <i class="fas fa-trash"></i> Remove
-          </button>
-        </div>
+        ` : ''}
       </div>
     `;
   },
@@ -485,16 +546,28 @@ const ProjectWizard = {
         <i class="fas fa-box text-blue-600 mr-2"></i>
         Material & Other Costs
       </h2>
-      <p class="text-gray-600 mb-6">Add non-labour expenses (software, travel, equipment, etc.)</p>
+      <p class="text-gray-600 mb-6">Add non-labour expenses from Materials Master catalog or enter custom items</p>
+      
+      <div class="mb-4 p-4 bg-green-50 border-l-4 border-green-400 rounded">
+        <p class="text-sm text-green-800">
+          <i class="fas fa-info-circle mr-2"></i>
+          <strong>Tip:</strong> Use "From Master Catalog" to select pre-defined materials with standard costs, or "Custom Entry" for one-off items.
+        </p>
+      </div>
       
       <div id="material-costs-list" class="space-y-4 mb-6">
         ${this.projectData.material_costs.map((item, idx) => this.renderMaterialItem(item, idx)).join('')}
-        ${this.projectData.material_costs.length === 0 ? '<p class="text-gray-500 text-center py-8">No material costs added yet. Click "Add Material Cost" to get started.</p>' : ''}
+        ${this.projectData.material_costs.length === 0 ? '<p class="text-gray-500 text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">No material costs added yet. Click a button below to add materials.</p>' : ''}
       </div>
       
-      <button type="button" onclick="ProjectWizard.addMaterialCost()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
-        <i class="fas fa-plus mr-2"></i> Add Material Cost
-      </button>
+      <div class="flex gap-3">
+        <button type="button" onclick="ProjectWizard.addMaterialCost('master')" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
+          <i class="fas fa-database mr-2"></i> From Master Catalog
+        </button>
+        <button type="button" onclick="ProjectWizard.addMaterialCost('custom')" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+          <i class="fas fa-plus mr-2"></i> Custom Entry
+        </button>
+      </div>
       
       <div class="mt-6 p-4 bg-green-50 rounded-lg">
         <div class="flex justify-between items-center">
@@ -510,23 +583,73 @@ const ProjectWizard = {
       `<option value="${m.milestone_code}" ${item.milestone_code === m.milestone_code ? 'selected' : ''}>${m.milestone_code} - ${m.milestone_name}</option>`
     ).join('');
     
+    const isFromMaster = !!item.material_master_id;
+    const bgColor = isFromMaster ? 'bg-green-50' : 'bg-white';
+    const borderColor = isFromMaster ? 'border-green-400' : 'border-gray-300';
+    
     return `
-      <div class="border border-gray-300 rounded-lg p-4 bg-white" data-material-index="${index}">
+      <div class="border-2 ${borderColor} rounded-lg p-4 ${bgColor}" data-material-index="${index}">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2">
+            ${isFromMaster ? `
+              <span class="px-2 py-1 text-xs rounded-full bg-green-600 text-white">
+                <i class="fas fa-database mr-1"></i> From Master Catalog
+              </span>
+              <span class="text-xs text-gray-600">Code: ${item.material_code || 'N/A'}</span>
+            ` : `
+              <span class="px-2 py-1 text-xs rounded-full bg-blue-600 text-white">
+                <i class="fas fa-edit mr-1"></i> Custom Entry
+              </span>
+            `}
+          </div>
+          <button type="button" onclick="ProjectWizard.removeMaterialCost(${index})"
+            class="bg-red-600 text-white px-3 py-2 rounded-lg hover:bg-red-700 transition text-sm">
+            <i class="fas fa-trash"></i> Remove
+          </button>
+        </div>
+        
         <div class="grid grid-cols-5 gap-3">
-          <div class="col-span-2">
-            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-            <input type="text" value="${item.material_description || ''}"
-              onchange="ProjectWizard.updateMaterialCost(${index}, 'material_description', this.value)"
-              placeholder="Software Licenses"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
-            <input type="text" value="${item.material_category || ''}"
-              onchange="ProjectWizard.updateMaterialCost(${index}, 'material_category', this.value)"
-              placeholder="Software"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
-          </div>
+          ${isFromMaster ? `
+            <div class="col-span-2">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Material (from catalog)</label>
+              <select onchange="ProjectWizard.selectMasterMaterial(${index}, this.value)"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
+                <option value="">-- Select material --</option>
+                ${(this.materials || []).map(mat => `
+                  <option value="${mat.id}" 
+                    data-code="${mat.material_code}"
+                    data-name="${mat.material_name}"
+                    data-category="${mat.material_category}"
+                    data-cost="${mat.default_unit_cost}"
+                    data-unit="${mat.unit_of_measure}"
+                    data-cost-type="${mat.default_cost_type}"
+                    ${item.material_master_id === mat.id ? 'selected' : ''}>
+                    ${mat.material_code} - ${mat.material_name} ($${parseFloat(mat.default_unit_cost).toLocaleString()})
+                  </option>
+                `).join('')}
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <input type="text" value="${item.material_description || ''}" readonly
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-gray-100">
+            </div>
+          ` : `
+            <div class="col-span-2">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <input type="text" value="${item.material_description || ''}"
+                onchange="ProjectWizard.updateMaterialCost(${index}, 'material_description', this.value)"
+                placeholder="Software Licenses"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+              <input type="text" value="${item.material_category || ''}"
+                onchange="ProjectWizard.updateMaterialCost(${index}, 'material_category', this.value)"
+                placeholder="Software"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+            </div>
+          `}
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Milestone</label>
             <select onchange="ProjectWizard.updateMaterialCost(${index}, 'milestone_code', this.value)"
@@ -534,12 +657,6 @@ const ProjectWizard = {
               <option value="">None</option>
               ${milestoneOptions}
             </select>
-          </div>
-          <div class="flex items-end">
-            <button type="button" onclick="ProjectWizard.removeMaterialCost(${index})"
-              class="w-full bg-red-600 text-white px-3 py-2 rounded-lg hover:bg-red-700 transition text-sm">
-              <i class="fas fa-trash"></i>
-            </button>
           </div>
         </div>
         

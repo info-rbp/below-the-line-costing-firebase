@@ -194,7 +194,7 @@ Object.assign(ProjectWizard, {
       </div>
       
       <!-- Validation Summary -->
-      <div class="bg-white border border-gray-300 rounded-lg p-6">
+      <div class="bg-white border border-gray-300 rounded-lg p-6 mb-4">
         <h3 class="text-lg font-bold text-gray-800 mb-4">Validation Summary</h3>
         <div class="space-y-2 text-sm">
           ${this.validateProject().map(v => `
@@ -205,7 +205,79 @@ Object.assign(ProjectWizard, {
           `).join('')}
         </div>
       </div>
+      
+      <!-- Approval Workflow Options -->
+      <div class="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-300 rounded-lg p-6">
+        <h3 class="text-lg font-bold text-gray-800 mb-4">
+          <i class="fas fa-clipboard-check text-blue-600 mr-2"></i>
+          Project Approval Options
+        </h3>
+        <p class="text-sm text-gray-600 mb-4">Choose how to handle this project after creation:</p>
+        
+        <div class="space-y-3">
+          <label class="flex items-start p-4 bg-white rounded-lg border-2 border-gray-200 hover:border-blue-400 cursor-pointer transition">
+            <input type="radio" name="approval_action" value="save_draft" checked
+                   onchange="ProjectWizard.setApprovalAction('save_draft')"
+                   class="mt-1 mr-3">
+            <div class="flex-1">
+              <div class="font-medium text-gray-800">
+                <i class="fas fa-save text-gray-600 mr-2"></i> Save as Draft
+              </div>
+              <div class="text-sm text-gray-600 mt-1">
+                Save the project in draft status. You can edit and submit for approval later.
+              </div>
+            </div>
+          </label>
+          
+          <label class="flex items-start p-4 bg-white rounded-lg border-2 border-gray-200 hover:border-green-400 cursor-pointer transition">
+            <input type="radio" name="approval_action" value="create_active"
+                   onchange="ProjectWizard.setApprovalAction('create_active')"
+                   class="mt-1 mr-3">
+            <div class="flex-1">
+              <div class="font-medium text-gray-800">
+                <i class="fas fa-check-circle text-green-600 mr-2"></i> Create as Active (Self-Approve)
+              </div>
+              <div class="text-sm text-gray-600 mt-1">
+                Create the project with active status immediately. No approval workflow required.
+              </div>
+              ${state.user?.role !== 'admin' && state.user?.role !== 'manager' ? `
+                <div class="text-xs text-orange-600 mt-1">
+                  <i class="fas fa-info-circle mr-1"></i> Note: Typically requires Manager or Admin privileges
+                </div>
+              ` : ''}
+            </div>
+          </label>
+          
+          <label class="flex items-start p-4 bg-white rounded-lg border-2 border-gray-200 hover:border-purple-400 cursor-pointer transition">
+            <input type="radio" name="approval_action" value="submit_approval"
+                   onchange="ProjectWizard.setApprovalAction('submit_approval')"
+                   class="mt-1 mr-3">
+            <div class="flex-1">
+              <div class="font-medium text-gray-800">
+                <i class="fas fa-paper-plane text-purple-600 mr-2"></i> Submit for Manager Approval
+              </div>
+              <div class="text-sm text-gray-600 mt-1">
+                Submit the project to a manager for review and approval.
+              </div>
+            </div>
+          </label>
+        </div>
+        
+        <!-- Comments field (shown for all options) -->
+        <div class="mt-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            Comments / Notes (Optional)
+          </label>
+          <textarea id="approval_comments" rows="3"
+                    placeholder="Add any comments or notes about this project..."
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
+        </div>
+      </div>
     `;
+  },
+  
+  setApprovalAction(action) {
+    this.approvalAction = action;
   },
   
   // Navigation methods
@@ -343,12 +415,40 @@ Object.assign(ProjectWizard, {
   },
   
   // Milestone methods
-  addMilestone() {
+  addMilestone(parentMilestoneCode = null) {
+    let milestone_code;
+    let milestone_level = 0;
+    let milestone_path = '';
+    
+    if (parentMilestoneCode) {
+      // Adding a sub-milestone
+      const parent = this.projectData.milestones.find(m => m.milestone_code === parentMilestoneCode);
+      if (parent) {
+        milestone_level = (parent.milestone_level || 0) + 1;
+        const childCount = this.projectData.milestones.filter(m => m.parent_milestone_id === parentMilestoneCode).length;
+        milestone_code = `${parentMilestoneCode}.${childCount + 1}`;
+        milestone_path = parent.milestone_path ? `${parent.milestone_path}.${milestone_code}` : milestone_code;
+        
+        // Mark parent as having children
+        parent.is_parent = true;
+      }
+    } else {
+      // Adding a root milestone
+      const rootCount = this.projectData.milestones.filter(m => !m.parent_milestone_id).length;
+      milestone_code = `M${String(rootCount + 1).padStart(2, '0')}`;
+      milestone_path = milestone_code;
+    }
+    
     const newMilestone = {
-      milestone_code: `M${String(this.projectData.milestones.length + 1).padStart(2, '0')}`,
+      milestone_code: milestone_code,
       milestone_name: '',
       milestone_date: '',
       description: '',
+      parent_milestone_id: parentMilestoneCode,
+      milestone_level: milestone_level,
+      milestone_path: milestone_path,
+      is_parent: false,
+      expanded: true,
       sequence_order: this.projectData.milestones.length
     };
     
@@ -359,14 +459,74 @@ Object.assign(ProjectWizard, {
   updateMilestone(index, field, value) {
     if (this.projectData.milestones[index]) {
       this.projectData.milestones[index][field] = value;
+      
+      // If changing milestone_code and it's a parent, update all children
+      if (field === 'milestone_code') {
+        const oldCode = this.projectData.milestones[index].milestone_code;
+        this.updateChildMilestoneCodes(oldCode, value);
+      }
     }
   },
   
+  updateChildMilestoneCodes(oldParentCode, newParentCode) {
+    this.projectData.milestones.forEach(m => {
+      if (m.parent_milestone_id === oldParentCode) {
+        m.parent_milestone_id = newParentCode;
+        // Update child's code to reflect new parent
+        const parts = m.milestone_code.split('.');
+        parts[parts.length - 2] = newParentCode.split('.').pop();
+        m.milestone_code = parts.join('.');
+        m.milestone_path = m.milestone_path.replace(oldParentCode, newParentCode);
+      }
+    });
+  },
+  
   removeMilestone(index) {
-    if (confirm('Remove this milestone?')) {
-      this.projectData.milestones.splice(index, 1);
+    const milestone = this.projectData.milestones[index];
+    
+    // Check if it has children
+    const hasChildren = this.projectData.milestones.some(m => m.parent_milestone_id === milestone.milestone_code);
+    
+    if (hasChildren) {
+      if (!confirm('This milestone has sub-milestones. Deleting it will also delete all sub-milestones. Continue?')) {
+        return;
+      }
+      // Remove all children recursively
+      this.removeChildMilestones(milestone.milestone_code);
+    } else {
+      if (!confirm('Remove this milestone?')) {
+        return;
+      }
+    }
+    
+    this.projectData.milestones.splice(index, 1);
+    this.render();
+  },
+  
+  removeChildMilestones(parentCode) {
+    const children = this.projectData.milestones.filter(m => m.parent_milestone_id === parentCode);
+    children.forEach(child => {
+      this.removeChildMilestones(child.milestone_code); // Recursive
+      const childIndex = this.projectData.milestones.findIndex(m => m.milestone_code === child.milestone_code);
+      if (childIndex >= 0) {
+        this.projectData.milestones.splice(childIndex, 1);
+      }
+    });
+  },
+  
+  toggleMilestone(index) {
+    if (this.projectData.milestones[index]) {
+      this.projectData.milestones[index].expanded = !this.projectData.milestones[index].expanded;
       this.render();
     }
+  },
+  
+  toggleAllMilestones() {
+    const allExpanded = this.projectData.milestones.every(m => m.expanded !== false);
+    this.projectData.milestones.forEach(m => {
+      m.expanded = !allExpanded;
+    });
+    this.render();
   },
   
   // Labour cost methods
@@ -439,10 +599,12 @@ Object.assign(ProjectWizard, {
   },
   
   // Material cost methods
-  addMaterialCost() {
+  addMaterialCost(source = 'custom') {
     const newItem = {
       material_description: '',
       material_category: '',
+      material_code: '',
+      material_master_id: source === 'master' ? null : undefined, // null = from master but not selected yet
       cost_type: 'one-time',
       milestone_code: '',
       quantity: 1,
@@ -456,6 +618,22 @@ Object.assign(ProjectWizard, {
     
     this.projectData.material_costs.push(newItem);
     this.render();
+  },
+  
+  selectMasterMaterial(index, materialId) {
+    if (!this.projectData.material_costs[index]) return;
+    
+    const material = this.materials.find(m => m.id === parseInt(materialId));
+    if (material) {
+      this.projectData.material_costs[index].material_master_id = material.id;
+      this.projectData.material_costs[index].material_code = material.material_code;
+      this.projectData.material_costs[index].material_description = material.material_name;
+      this.projectData.material_costs[index].material_category = material.material_category;
+      this.projectData.material_costs[index].unit_cost = parseFloat(material.default_unit_cost);
+      this.projectData.material_costs[index].supplier = material.supplier_name || '';
+      this.projectData.material_costs[index].cost_type = material.default_cost_type || 'one-time';
+      this.render();
+    }
   },
   
   updateMaterialCost(index, field, value) {
@@ -570,7 +748,26 @@ Object.assign(ProjectWizard, {
       return;
     }
     
-    if (!confirm('Create this project with all details?')) {
+    // Get approval action and comments
+    const approvalAction = this.approvalAction || 'save_draft';
+    const comments = document.getElementById('approval_comments')?.value || '';
+    
+    // Set approval status based on action
+    let approval_status = 'draft';
+    let projectStatus = 'planning';
+    let confirmMessage = 'Create this project as draft?';
+    
+    if (approvalAction === 'create_active') {
+      approval_status = 'approved';
+      projectStatus = 'active';
+      confirmMessage = 'Create this project as ACTIVE (self-approved)?';
+    } else if (approvalAction === 'submit_approval') {
+      approval_status = 'pending_approval';
+      projectStatus = 'planning';
+      confirmMessage = 'Create and submit this project for manager approval?';
+    }
+    
+    if (!confirm(confirmMessage)) {
       return;
     }
     
@@ -580,6 +777,10 @@ Object.assign(ProjectWizard, {
       button.disabled = true;
       button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Creating Project...';
       
+      // Update project data with approval settings
+      this.projectData.project.approval_status = approval_status;
+      this.projectData.project.status = projectStatus;
+      
       // Submit to API
       const response = await api.request('/projects/with-details', {
         method: 'POST',
@@ -587,7 +788,36 @@ Object.assign(ProjectWizard, {
       });
       
       if (response.success) {
-        alert(`Project created successfully!\n\nProject ID: ${response.data.project_id}\nMilestones: ${response.data.milestones_created}\nLabour Items: ${response.data.labour_items_created}\nMaterial Items: ${response.data.material_items_created}`);
+        const projectId = response.data.project_id;
+        
+        // If submitting for approval, record the submission
+        if (approvalAction === 'submit_approval') {
+          try {
+            await api.request(`/projects/${projectId}/submit-for-approval`, {
+              method: 'POST',
+              body: { comments }
+            });
+          } catch (err) {
+            console.warn('Could not record approval submission:', err);
+          }
+        }
+        
+        let statusMessage = '';
+        if (approvalAction === 'save_draft') {
+          statusMessage = 'Status: Draft (you can edit and submit later)';
+        } else if (approvalAction === 'create_active') {
+          statusMessage = 'Status: Active (self-approved)';
+        } else if (approvalAction === 'submit_approval') {
+          statusMessage = 'Status: Pending Manager Approval';
+        }
+        
+        alert(`Project created successfully!\n\n` +
+              `Project ID: ${projectId}\n` +
+              `${statusMessage}\n\n` +
+              `Details:\n` +
+              `- Milestones: ${response.data.milestones_created}\n` +
+              `- Labour Items: ${response.data.labour_items_created}\n` +
+              `- Material Items: ${response.data.material_items_created}`);
         
         // Close wizard and refresh projects
         this.close();
