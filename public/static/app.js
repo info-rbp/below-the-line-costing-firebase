@@ -200,6 +200,10 @@ const components = {
               <i class="fas fa-users mr-3"></i> Personnel
             </a>
             ${['admin', 'manager'].includes(state.user?.role) ? `
+              <a href="#" onclick="showView('pending-approvals')" class="flex items-center px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg mb-1">
+                <i class="fas fa-clipboard-check mr-3"></i> Pending Approvals
+                <span id="approvalBadge" class="ml-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full" style="display:none;">0</span>
+              </a>
               <a href="#" onclick="showView('manager-settings')" class="flex items-center px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg mb-1">
                 <i class="fas fa-cog mr-3"></i> Manager Settings
               </a>
@@ -829,6 +833,44 @@ const components = {
         </div>
       </div>
     `;
+  },
+  
+  // Pending Approvals View
+  pendingApprovalsView() {
+    return `
+      <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-2">
+          <i class="fas fa-clipboard-check text-purple-600 mr-2"></i> Pending Approvals
+        </h1>
+        <p class="text-gray-600">Review and approve/reject project submissions</p>
+      </div>
+      
+      <div class="mb-6 flex items-center justify-between">
+        <div class="flex gap-3">
+          <button onclick="loadPendingApprovals()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+            <i class="fas fa-sync mr-2"></i> Refresh
+          </button>
+          <select id="approvalStatusFilter" onchange="filterApprovals()" 
+                  class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+            <option value="pending_approval">Pending Approval</option>
+            <option value="all">All Projects</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+          </select>
+        </div>
+        <div class="text-sm text-gray-600">
+          <i class="fas fa-info-circle mr-1"></i> 
+          <span id="approvalCount">Loading...</span>
+        </div>
+      </div>
+      
+      <div id="pendingApprovalsList" class="space-y-4">
+        <div class="text-center py-12">
+          <i class="fas fa-spinner fa-spin text-4xl text-gray-400 mb-4"></i>
+          <p class="text-gray-500">Loading pending approvals...</p>
+        </div>
+      </div>
+    `;
   }
 };
 
@@ -901,6 +943,10 @@ function showView(view) {
       mainContent.innerHTML = components.managerSettingsView();
       // Load clients data when entering manager settings
       loadClientsData();
+    } else if (view === 'pending-approvals') {
+      mainContent.innerHTML = components.pendingApprovalsView();
+      // Load pending approvals when entering view
+      loadPendingApprovals();
     } else if (view === 'integrations') {
       mainContent.innerHTML = components.integrationsView();
     }
@@ -1670,6 +1716,355 @@ function showAddEmployeeModal() {
 
 function saveSystemSettings() {
   alert('System settings saved!\n\nNote: Full backend integration coming soon');
+}
+
+// Pending Approvals Functions
+let pendingApprovalsData = {
+  projects: [],
+  filtered: []
+};
+
+async function loadPendingApprovals() {
+  try {
+    const statusFilter = document.getElementById('approvalStatusFilter')?.value || 'pending_approval';
+    const endpoint = statusFilter === 'all' ? '/projects' : '/projects/pending-approval';
+    
+    const response = await api.request(endpoint);
+    if (response.success) {
+      pendingApprovalsData.projects = response.data;
+      pendingApprovalsData.filtered = response.data;
+      
+      // Update badge count
+      const pendingCount = response.data.filter(p => p.approval_status === 'pending_approval').length;
+      const badge = document.getElementById('approvalBadge');
+      if (badge) {
+        badge.textContent = pendingCount;
+        badge.style.display = pendingCount > 0 ? 'inline-block' : 'none';
+      }
+      
+      renderPendingApprovals();
+    }
+  } catch (error) {
+    console.error('Failed to load pending approvals:', error);
+    document.getElementById('pendingApprovalsList').innerHTML = `
+      <div class="card p-8 text-center">
+        <i class="fas fa-exclamation-triangle text-4xl text-red-500 mb-4"></i>
+        <p class="text-red-600 font-medium">Failed to load pending approvals</p>
+        <p class="text-sm text-gray-600 mt-2">${error.message || 'Unknown error'}</p>
+      </div>
+    `;
+  }
+}
+
+function renderPendingApprovals() {
+  const container = document.getElementById('pendingApprovalsList');
+  const countDisplay = document.getElementById('approvalCount');
+  
+  if (!container) return;
+  
+  if (countDisplay) {
+    countDisplay.textContent = `${pendingApprovalsData.filtered.length} project(s)`;
+  }
+  
+  if (pendingApprovalsData.filtered.length === 0) {
+    container.innerHTML = `
+      <div class="card p-12 text-center">
+        <i class="fas fa-inbox text-6xl text-gray-300 mb-4"></i>
+        <p class="text-xl font-medium text-gray-600 mb-2">No Projects Found</p>
+        <p class="text-gray-500">There are no projects matching your filter criteria</p>
+      </div>
+    `;
+    return;
+  }
+  
+  container.innerHTML = pendingApprovalsData.filtered.map(project => {
+    const statusColors = {
+      'pending_approval': 'bg-yellow-100 text-yellow-800 border-yellow-300',
+      'approved': 'bg-green-100 text-green-800 border-green-300',
+      'rejected': 'bg-red-100 text-red-800 border-red-300',
+      'draft': 'bg-gray-100 text-gray-800 border-gray-300'
+    };
+    
+    const statusIcons = {
+      'pending_approval': 'fa-clock',
+      'approved': 'fa-check-circle',
+      'rejected': 'fa-times-circle',
+      'draft': 'fa-file'
+    };
+    
+    const statusClass = statusColors[project.approval_status] || 'bg-gray-100 text-gray-800';
+    const statusIcon = statusIcons[project.approval_status] || 'fa-question';
+    
+    return `
+      <div class="card p-6 hover:shadow-lg transition">
+        <div class="flex items-start justify-between mb-4">
+          <div class="flex-1">
+            <div class="flex items-center gap-3 mb-2">
+              <h3 class="text-xl font-bold text-gray-800">${project.project_name}</h3>
+              <span class="px-3 py-1 text-xs rounded-full border ${statusClass}">
+                <i class="fas ${statusIcon} mr-1"></i> ${project.approval_status.replace('_', ' ').toUpperCase()}
+              </span>
+            </div>
+            <p class="text-sm text-gray-600">
+              <i class="fas fa-hashtag mr-1"></i> ${project.project_code} 
+              <span class="mx-2">|</span>
+              <i class="fas fa-building mr-1"></i> ${project.client_name}
+            </p>
+          </div>
+          ${project.approval_status === 'pending_approval' ? `
+            <div class="flex gap-2">
+              <button onclick="reviewProjectApproval(${project.id})" 
+                      class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition">
+                <i class="fas fa-eye mr-2"></i> Review
+              </button>
+            </div>
+          ` : ''}
+        </div>
+        
+        <div class="grid grid-cols-4 gap-4 mb-4">
+          <div>
+            <p class="text-xs text-gray-500 mb-1">Total Cost</p>
+            <p class="text-lg font-bold text-blue-600">$${(project.total_cost || 0).toLocaleString()}</p>
+          </div>
+          <div>
+            <p class="text-xs text-gray-500 mb-1">Revenue</p>
+            <p class="text-lg font-bold text-green-600">$${(project.total_revenue || 0).toLocaleString()}</p>
+          </div>
+          <div>
+            <p class="text-xs text-gray-500 mb-1">Margin</p>
+            <p class="text-lg font-bold ${(project.margin_percentage || 0) < 10 ? 'text-red-600' : 'text-green-600'}">
+              ${(project.margin_percentage || 0).toFixed(1)}%
+            </p>
+          </div>
+          <div>
+            <p class="text-xs text-gray-500 mb-1">Duration</p>
+            <p class="text-sm font-medium text-gray-700">
+              ${project.start_date ? new Date(project.start_date).toLocaleDateString() : 'N/A'} - 
+              ${project.end_date ? new Date(project.end_date).toLocaleDateString() : 'N/A'}
+            </p>
+          </div>
+        </div>
+        
+        ${project.submitted_at ? `
+          <div class="pt-4 border-t border-gray-200 text-sm text-gray-600">
+            <i class="fas fa-clock mr-1"></i> Submitted: ${new Date(project.submitted_at).toLocaleString()}
+            ${project.submitted_by_name ? ` by <strong>${project.submitted_by_name}</strong>` : ''}
+          </div>
+        ` : ''}
+        
+        ${project.approved_at ? `
+          <div class="pt-4 border-t border-gray-200 text-sm text-green-600">
+            <i class="fas fa-check mr-1"></i> Approved: ${new Date(project.approved_at).toLocaleString()}
+          </div>
+        ` : ''}
+        
+        ${project.rejected_at ? `
+          <div class="pt-4 border-t border-gray-200 text-sm text-red-600">
+            <i class="fas fa-times mr-1"></i> Rejected: ${new Date(project.rejected_at).toLocaleString()}
+            ${project.rejection_reason ? `<br><span class="ml-5">"${project.rejection_reason}"</span>` : ''}
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+function filterApprovals() {
+  const statusFilter = document.getElementById('approvalStatusFilter')?.value;
+  
+  if (statusFilter === 'all') {
+    pendingApprovalsData.filtered = pendingApprovalsData.projects;
+  } else {
+    pendingApprovalsData.filtered = pendingApprovalsData.projects.filter(p => 
+      p.approval_status === statusFilter
+    );
+  }
+  
+  renderPendingApprovals();
+}
+
+async function reviewProjectApproval(projectId) {
+  try {
+    // Load full project details
+    const response = await api.request(`/projects/${projectId}`);
+    if (response.success) {
+      showApprovalReviewModal(response.data);
+    }
+  } catch (error) {
+    alert('Failed to load project details');
+  }
+}
+
+function showApprovalReviewModal(project) {
+  const modalHTML = `
+    <div id="approvalReviewModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center overflow-y-auto">
+      <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl m-4 max-h-[90vh] overflow-y-auto">
+        <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+          <h2 class="text-2xl font-bold text-gray-800">
+            <i class="fas fa-clipboard-check text-purple-600 mr-2"></i>
+            Review Project Approval
+          </h2>
+          <button onclick="closeApprovalReviewModal()" class="text-gray-400 hover:text-gray-600">
+            <i class="fas fa-times text-xl"></i>
+          </button>
+        </div>
+        
+        <div class="p-6">
+          <!-- Project Overview -->
+          <div class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-6 mb-6">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">${project.project_name}</h3>
+            <div class="grid grid-cols-2 gap-4 text-sm">
+              <div><span class="text-gray-600">Project Code:</span> <span class="font-medium ml-2">${project.project_code}</span></div>
+              <div><span class="text-gray-600">Client:</span> <span class="font-medium ml-2">${project.client_name}</span></div>
+              <div><span class="text-gray-600">Status:</span> <span class="font-medium ml-2">${project.status}</span></div>
+              <div><span class="text-gray-600">Duration:</span> <span class="font-medium ml-2">${project.start_date} to ${project.end_date}</span></div>
+            </div>
+          </div>
+          
+          <!-- Financial Summary -->
+          <div class="grid grid-cols-3 gap-4 mb-6">
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p class="text-xs text-gray-600 mb-1">Total Cost</p>
+              <p class="text-2xl font-bold text-blue-600">$${(project.total_cost || 0).toLocaleString()}</p>
+            </div>
+            <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+              <p class="text-xs text-gray-600 mb-1">Expected Revenue</p>
+              <p class="text-2xl font-bold text-green-600">$${(project.total_revenue || 0).toLocaleString()}</p>
+            </div>
+            <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+              <p class="text-xs text-gray-600 mb-1">Margin</p>
+              <p class="text-2xl font-bold ${(project.margin_percentage || 0) < 10 ? 'text-red-600' : 'text-purple-600'}">
+                ${(project.margin_percentage || 0).toFixed(1)}%
+              </p>
+            </div>
+          </div>
+          
+          ${(project.margin_percentage || 0) < 15 ? `
+            <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+              <div class="flex">
+                <i class="fas fa-exclamation-triangle text-yellow-600 mr-3 mt-1"></i>
+                <div>
+                  <p class="font-medium text-yellow-800">Margin Warning</p>
+                  <p class="text-sm text-yellow-700">Project margin is ${(project.margin_percentage || 0) < 5 ? 'critically low' : 'below 15%'}. Consider reviewing before approval.</p>
+                </div>
+              </div>
+            </div>
+          ` : ''}
+          
+          <!-- Approval Actions -->
+          <div class="border-t border-gray-200 pt-6">
+            <h4 class="font-semibold text-gray-800 mb-4">Approval Decision</h4>
+            
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Comments</label>
+              <textarea id="approvalComments" rows="3" 
+                        placeholder="Add your review comments..."
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"></textarea>
+            </div>
+            
+            <div id="rejectionReason" style="display:none;" class="mb-4">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Rejection Reason <span class="text-red-500">*</span></label>
+              <textarea id="rejectionReasonText" rows="2" 
+                        placeholder="Please provide a reason for rejection..."
+                        class="w-full px-4 py-2 border border-red-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"></textarea>
+            </div>
+            
+            <div class="flex justify-end gap-3">
+              <button type="button" onclick="closeApprovalReviewModal()" 
+                      class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
+                Cancel
+              </button>
+              <button type="button" onclick="showRejectionReason()" 
+                      class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">
+                <i class="fas fa-times mr-2"></i> Reject Project
+              </button>
+              <button type="button" onclick="approveProject(${project.id})" 
+                      class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                <i class="fas fa-check mr-2"></i> Approve Project
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
+}
+
+function closeApprovalReviewModal() {
+  const modal = document.getElementById('approvalReviewModal');
+  if (modal) {
+    modal.remove();
+  }
+}
+
+function showRejectionReason() {
+  const reasonDiv = document.getElementById('rejectionReason');
+  if (reasonDiv) {
+    reasonDiv.style.display = 'block';
+    document.getElementById('rejectionReasonText')?.focus();
+  }
+  
+  // Change button behavior
+  const rejectBtn = event.target;
+  rejectBtn.onclick = () => {
+    const projectId = parseInt(rejectBtn.closest('.bg-white').querySelector('button[onclick^="approveProject"]').getAttribute('onclick').match(/\d+/)[0]);
+    rejectProject(projectId);
+  };
+  rejectBtn.innerHTML = '<i class="fas fa-times mr-2"></i> Confirm Rejection';
+}
+
+async function approveProject(projectId) {
+  const comments = document.getElementById('approvalComments')?.value || '';
+  
+  if (!confirm('Are you sure you want to APPROVE this project?')) {
+    return;
+  }
+  
+  try {
+    const response = await api.request(`/projects/${projectId}/approve`, {
+      method: 'POST',
+      body: { comments }
+    });
+    
+    if (response.success) {
+      alert('Project approved successfully!');
+      closeApprovalReviewModal();
+      await loadPendingApprovals();
+    }
+  } catch (error) {
+    alert(`Failed to approve project: ${error.error || 'Unknown error'}`);
+  }
+}
+
+async function rejectProject(projectId) {
+  const comments = document.getElementById('approvalComments')?.value || '';
+  const rejectionReason = document.getElementById('rejectionReasonText')?.value;
+  
+  if (!rejectionReason || rejectionReason.trim() === '') {
+    alert('Please provide a reason for rejection');
+    return;
+  }
+  
+  if (!confirm('Are you sure you want to REJECT this project?')) {
+    return;
+  }
+  
+  try {
+    const response = await api.request(`/projects/${projectId}/reject`, {
+      method: 'POST',
+      body: { comments, rejection_reason: rejectionReason }
+    });
+    
+    if (response.success) {
+      alert('Project rejected');
+      closeApprovalReviewModal();
+      await loadPendingApprovals();
+    }
+  } catch (error) {
+    alert(`Failed to reject project: ${error.error || 'Unknown error'}`);
+  }
 }
 
 // Initialize app
