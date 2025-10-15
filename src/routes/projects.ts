@@ -263,4 +263,243 @@ projects.post('/:id/recalculate', requireRole('admin', 'manager', 'user'), async
   }
 });
 
+/**
+ * POST /api/projects/with-details
+ * Create project with all related data in one transaction
+ */
+projects.post('/with-details', requireRole('admin', 'manager'), async (c) => {
+  try {
+    const user = c.get('user') as User;
+    const data = await c.req.json();
+    
+    const { 
+      project, 
+      milestones = [], 
+      labour_costs = [], 
+      material_costs = [], 
+      payment_schedule = [] 
+    } = data;
+    
+    // Validate project data
+    if (!project || !project.project_code || !project.project_name || !project.client_name) {
+      return c.json<ApiResponse>({ 
+        success: false, 
+        error: 'Project data with code, name, and client required' 
+      }, 400);
+    }
+    
+    // Check if project code already exists
+    const existing = await c.env.DB.prepare(
+      'SELECT id FROM projects WHERE project_code = ?'
+    ).bind(project.project_code).first();
+    
+    if (existing) {
+      return c.json<ApiResponse>({ 
+        success: false, 
+        error: 'Project code already exists' 
+      }, 400);
+    }
+    
+    // Step 1: Create project
+    const projectResult = await c.env.DB.prepare(`
+      INSERT INTO projects (
+        project_code, project_name, client_name, start_date, end_date,
+        tax_rate, ga_percentage, ga_application, total_revenue, created_by
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      project.project_code, 
+      project.project_name, 
+      project.client_name, 
+      project.start_date, 
+      project.end_date,
+      project.tax_rate || 0, 
+      project.ga_percentage || 0, 
+      project.ga_application || 'all', 
+      project.total_revenue || 0, 
+      user.id
+    ).run();
+    
+    const project_id = projectResult.meta.last_row_id as number;
+    
+    // Step 2: Create milestones and build milestone_code to ID mapping
+    const milestoneMap: Record<string, number> = {};
+    
+    for (const milestone of milestones) {
+      if (!milestone.milestone_code || !milestone.milestone_name) continue;
+      
+      const milestoneResult = await c.env.DB.prepare(`
+        INSERT INTO milestones (project_id, milestone_code, milestone_name, milestone_date, description, sequence_order)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).bind(
+        project_id,
+        milestone.milestone_code,
+        milestone.milestone_name,
+        milestone.milestone_date,
+        milestone.description,
+        milestone.sequence_order || 0
+      ).run();
+      
+      milestoneMap[milestone.milestone_code] = milestoneResult.meta.last_row_id as number;
+    }
+    
+    // Step 3: Create labour costs
+    for (const item of labour_costs) {
+      if (!item.task_description || !item.rate_type || !item.hours || !item.hourly_rate) continue;
+      
+      // Resolve milestone_id from milestone_code if provided
+      const milestone_id = item.milestone_code ? milestoneMap[item.milestone_code] : item.milestone_id;
+      
+      // Calculate costs
+      const base_cost = item.hours * item.hourly_rate;
+      const apply_ga = item.apply_ga !== undefined ? item.apply_ga : 1;
+      const ga_cost = apply_ga ? base_cost * (project.ga_percentage / 100) : 0;
+      const total_cost = base_cost + ga_cost;
+      
+      await c.env.DB.prepare(`
+        INSERT INTO cost_line_items (
+          project_id, milestone_id, wbs_code, task_description, rate_type,
+          personnel_id, rate_band_id, hours, hourly_rate, apply_ga,
+          base_cost, ga_cost, total_cost, notes
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).bind(
+        project_id,
+        milestone_id,
+        item.wbs_code,
+        item.task_description,
+        item.rate_type,
+        item.personnel_id,
+        item.rate_band_id,
+        item.hours,
+        item.hourly_rate,
+        apply_ga,
+        base_cost,
+        ga_cost,
+        total_cost,
+        item.notes
+      ).run();
+    }
+    
+    // Step 4: Create material costs
+    for (const item of material_costs) {
+      if (!item.material_description || !item.cost_type || !item.quantity || !item.unit_cost) continue;
+      
+      const milestone_id = item.milestone_code ? milestoneMap[item.milestone_code] : item.milestone_id;
+      
+      // Calculate costs
+      let base_cost = item.quantity * item.unit_cost;
+      
+      // For monthly costs, multiply by months
+      let months_count = null;
+      if (item.cost_type === 'monthly' && item.start_month !== undefined && item.end_month !== undefined) {
+        months_count = item.end_month - item.start_month + 1;
+        base_cost = item.quantity * item.unit_cost * months_count;
+      }
+      
+      const apply_ga = item.apply_ga !== undefined ? item.apply_ga : 1;
+      const ga_cost = apply_ga ? base_cost * (project.ga_percentage / 100) : 0;
+      const total_cost = base_cost + ga_cost;
+      
+      await c.env.DB.prepare(`
+        INSERT INTO material_costs (
+          project_id, milestone_id, material_description, material_category, cost_type,
+          quantity, unit_cost, start_month, end_month, months_count, apply_ga,
+          base_cost, ga_cost, total_cost, supplier, notes
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).bind(
+        project_id,
+        milestone_id,
+        item.material_description,
+        item.material_category,
+        item.cost_type,
+        item.quantity,
+        item.unit_cost,
+        item.start_month,
+        item.end_month,
+        months_count,
+        apply_ga,
+        base_cost,
+        ga_cost,
+        total_cost,
+        item.supplier,
+        item.notes
+      ).run();
+    }
+    
+    // Step 5: Create payment schedule
+    for (const payment of payment_schedule) {
+      if (!payment.payment_description || !payment.invoice_amount) continue;
+      
+      const milestone_id = payment.milestone_code ? milestoneMap[payment.milestone_code] : payment.milestone_id;
+      
+      await c.env.DB.prepare(`
+        INSERT INTO payment_schedule (
+          project_id, milestone_id, payment_description, payment_date,
+          invoice_amount, invoice_number, payment_status, notes
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `).bind(
+        project_id,
+        milestone_id,
+        payment.payment_description,
+        payment.payment_date,
+        payment.invoice_amount,
+        payment.invoice_number,
+        payment.payment_status || 'pending',
+        payment.notes
+      ).run();
+    }
+    
+    // Step 6: Recalculate project totals
+    const totals = await c.env.DB.prepare(`
+      SELECT 
+        COALESCE(SUM(cli.total_cost), 0) as labour_cost,
+        COALESCE(SUM(mc.total_cost), 0) as material_cost
+      FROM projects p
+      LEFT JOIN cost_line_items cli ON p.id = cli.project_id
+      LEFT JOIN material_costs mc ON p.id = mc.project_id
+      WHERE p.id = ?
+      GROUP BY p.id
+    `).bind(project_id).first<any>();
+    
+    const total_labour_cost = totals?.labour_cost || 0;
+    const total_material_cost = totals?.material_cost || 0;
+    const total_cost = total_labour_cost + total_material_cost;
+    const margin = project.total_revenue - total_cost;
+    const margin_percentage = project.total_revenue > 0 ? (margin / project.total_revenue) * 100 : 0;
+    
+    await c.env.DB.prepare(`
+      UPDATE projects SET
+        total_labour_cost = ?,
+        total_material_cost = ?,
+        total_cost = ?,
+        margin_percentage = ?
+      WHERE id = ?
+    `).bind(total_labour_cost, total_material_cost, total_cost, margin_percentage, project_id).run();
+    
+    return c.json<ApiResponse>({ 
+      success: true, 
+      message: 'Project created successfully with all details',
+      data: { 
+        project_id,
+        milestones_created: Object.keys(milestoneMap).length,
+        labour_items_created: labour_costs.length,
+        material_items_created: material_costs.length,
+        payments_created: payment_schedule.length,
+        totals: {
+          total_labour_cost,
+          total_material_cost,
+          total_cost,
+          margin_percentage
+        }
+      }
+    }, 201);
+    
+  } catch (error) {
+    console.error('Create project with details error:', error);
+    return c.json<ApiResponse>({ 
+      success: false, 
+      error: 'Failed to create project. Transaction rolled back.' 
+    }, 500);
+  }
+});
+
 export default projects;

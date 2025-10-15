@@ -9,6 +9,8 @@ import projects from './routes/projects'
 import personnel from './routes/personnel'
 import costs from './routes/costs'
 import integrations from './routes/integrations'
+import milestones from './routes/milestones'
+import rateBands from './routes/rate-bands'
 
 const app = new Hono<{ Bindings: Env }>()
 
@@ -24,6 +26,8 @@ app.route('/api/projects', projects)
 app.route('/api/personnel', personnel)
 app.route('/api/costs', costs)
 app.route('/api/integrations', integrations)
+app.route('/api/milestones', milestones)
+app.route('/api/rate-bands', rateBands)
 
 // Health check
 app.get('/api/health', (c) => {
@@ -60,6 +64,8 @@ app.get('/', (c) => {
         
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
         <script src="/static/app.js"></script>
+        <script src="/static/wizard.js"></script>
+        <script src="/static/wizard-helpers.js"></script>
     </body>
     </html>
   `)

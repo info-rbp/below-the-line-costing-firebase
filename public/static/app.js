@@ -622,7 +622,23 @@ async function viewProject(id) {
 }
 
 function showCreateProjectModal() {
-  alert('Create Project Modal - To be implemented with full form');
+  // Initialize and show the project creation wizard
+  const mainContent = document.getElementById('mainContent');
+  
+  // Create wizard container
+  const wizardContainer = document.createElement('div');
+  wizardContainer.id = 'wizardContainer';
+  wizardContainer.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center overflow-y-auto';
+  wizardContainer.innerHTML = '<div id="wizardContent" class="w-full max-w-6xl p-4"></div>';
+  
+  document.body.appendChild(wizardContainer);
+  
+  // Initialize wizard
+  if (window.ProjectWizard) {
+    ProjectWizard.init();
+  } else {
+    alert('Wizard not loaded. Please refresh the page.');
+  }
 }
 
 function showCreatePersonnelModal() {
