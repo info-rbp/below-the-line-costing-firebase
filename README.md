@@ -378,7 +378,49 @@ SELECT * FROM cost_line_items WHERE project_id = 1;
 
 ## Deployment
 
-### Cloudflare Pages Deployment
+### 🚀 Google Cloud Platform Deployment (Recommended)
+
+**Your application is now ready for Google Cloud deployment!**
+
+**Quick Start Guide**: See `QUICKSTART_GOOGLE_CLOUD.md` (15 minutes)  
+**Detailed Guide**: See `DEPLOY_GOOGLE_CLOUD.md` (full documentation)
+
+**What's Included:**
+- ✅ Node.js server with PostgreSQL support
+- ✅ Docker containerization (Dockerfile)
+- ✅ PostgreSQL migration scripts (migrations-postgres/)
+- ✅ Database helper utilities (src/db.js)
+- ✅ Environment configuration (.env.example)
+- ✅ Deployment automation scripts
+
+**Deployment Summary:**
+```bash
+# 1. Set up Google Cloud
+gcloud projects create btl-costing-prod
+gcloud config set project btl-costing-prod
+
+# 2. Create PostgreSQL database
+gcloud sql instances create btl-db --database-version=POSTGRES_15
+
+# 3. Deploy to Cloud Run
+gcloud run deploy btl-costing --source . --region us-central1
+
+# See QUICKSTART_GOOGLE_CLOUD.md for complete instructions
+```
+
+**Estimated Costs:**
+- ~$15-30/month (includes $300 free credit for new users)
+- Cloud Run: ~$5-10/month
+- Cloud SQL: ~$10-20/month
+
+**Backup:** Original Cloudflare version saved at:  
+https://page.gensparksite.com/project_backups/btl-costing-cloudflare-version.tar.gz
+
+---
+
+### Alternative: Cloudflare Pages Deployment
+
+**Note:** Cloudflare deployment had authentication issues. Google Cloud deployment is recommended.
 
 #### 1. Create Production Database
 
@@ -474,10 +516,21 @@ webapp/
 
 ## Deployment Status
 
-- ✅ **Local Development**: Running and tested
-- ⏳ **Production Deployment**: Ready for deployment
+### Local Development
+- ✅ **Cloudflare Workers Version**: Running and tested (backup available)
+- ✅ **Google Cloud Version**: Converted and ready
+
+### Production Deployment
+- ✅ **Google Cloud Ready**: All files created, deployment guide complete
+  - Node.js server: `src/server.js`
+  - PostgreSQL migrations: `migrations-postgres/`
+  - Docker container: `Dockerfile`
+  - Deployment docs: `QUICKSTART_GOOGLE_CLOUD.md` & `DEPLOY_GOOGLE_CLOUD.md`
+- ⏳ **Google Cloud Deployed**: Awaiting user deployment
 - ⏳ **GitHub Repository**: Ready to push
 - ⏳ **Custom Domain**: Not configured
+
+### Integrations
 - ⏳ **Xero Integration**: Infrastructure ready, credentials needed
 - ⏳ **MS Project Integration**: Infrastructure ready
 
@@ -485,20 +538,21 @@ webapp/
 
 ### Immediate (High Priority)
 
-1. **Deploy to Cloudflare Pages**
-   - Create production D1 database
-   - Apply migrations
-   - Deploy application
-   - Configure custom domain
+1. **Deploy to Google Cloud** (15-30 minutes)
+   - Follow `QUICKSTART_GOOGLE_CLOUD.md` for step-by-step guide
+   - Create Google Cloud account (get $300 free credit)
+   - Deploy to Cloud Run with PostgreSQL
+   - Get live production URL
 
 2. **Setup GitHub Repository**
    - Push code to GitHub
-   - Configure CI/CD (optional)
+   - Configure CI/CD with Cloud Build (optional)
 
 3. **Production Configuration**
-   - Generate strong JWT secret
-   - Create production admin user
-   - Configure backup strategy
+   - Change default admin password
+   - Configure database backups
+   - Set up monitoring and alerts
+   - Add team members
 
 ### Short-term (Medium Priority)
 
@@ -586,7 +640,9 @@ Proprietary - JL2 Group
 
 **Version**: 1.0
 
-**Last Updated**: October 15, 2025
+**Last Updated**: October 16, 2025
+
+**Note**: Application converted from Cloudflare Workers (D1) to Node.js + PostgreSQL for Google Cloud deployment on October 16, 2025. Original Cloudflare version backed up and available for download.
 
 ## Current Status
 
@@ -646,22 +702,22 @@ Proprietary - JL2 Group
 
 ### ⏳ Pending Implementation
 
-1. **Xero Integration** - API credentials needed for activation
-2. **MS Project Integration** - XML parsing and import functionality
-3. **Project Editing** - Full edit wizard for existing projects
-4. **Cost Item Editing** - Direct editing of labour and material costs
-5. **Reports** - PDF export and financial reporting
-6. **Cash Flow Tracking** - Month-by-month cash flow management
-7. **Production Deployment** - Deploy to Cloudflare Pages
+1. **Production Deployment** - Deploy to Google Cloud Platform
+2. **Xero Integration** - API credentials needed for activation
+3. **MS Project Integration** - XML parsing and import functionality
+4. **Project Editing** - Full edit wizard for existing projects
+5. **Cost Item Editing** - Direct editing of labour and material costs
+6. **Reports** - PDF export and financial reporting
+7. **Cash Flow Tracking** - Month-by-month cash flow management
 
-### 🎯 Next Steps
+### 🎯 Next Immediate Actions
 
-1. **Deploy to Production** - Cloudflare Pages deployment
+1. **Deploy to Google Cloud** (See QUICKSTART_GOOGLE_CLOUD.md)
 2. **Setup GitHub Repository** - Push code and configure CI/CD
-3. **User Acceptance Testing** - Full end-to-end testing
-4. **Project Editing** - Add full edit capabilities
-5. **Configure Xero Integration** - Add API credentials
-6. **Production Monitoring** - Setup error tracking and analytics
+3. **User Acceptance Testing** - Full end-to-end testing with real users
+4. **Project Editing** - Add full edit capabilities for existing projects
+5. **Configure Xero Integration** - Add API credentials when available
+6. **Production Monitoring** - Setup error tracking and analytics (Google Cloud Monitoring)
 
 ---
 
