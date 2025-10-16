@@ -378,49 +378,52 @@ SELECT * FROM cost_line_items WHERE project_id = 1;
 
 ## Deployment
 
-### 🚀 Google Cloud Platform Deployment (Recommended)
+### 🚀 Cloudflare Pages Deployment (Recommended)
 
-**Your application is now ready for Google Cloud deployment!**
+**Your application is ready for Cloudflare Pages!**
 
-**Quick Start Guide**: See `QUICKSTART_GOOGLE_CLOUD.md` (15 minutes)  
-**Detailed Guide**: See `DEPLOY_GOOGLE_CLOUD.md` (full documentation)
+**📖 Full Guide:** See `CLOUDFLARE_DEPLOY.md` (complete instructions)
 
-**What's Included:**
-- ✅ Node.js server with PostgreSQL support
-- ✅ Docker containerization (Dockerfile)
-- ✅ PostgreSQL migration scripts (migrations-postgres/)
-- ✅ Database helper utilities (src/db.js)
-- ✅ Environment configuration (.env.example)
-- ✅ Deployment automation scripts
-
-**Deployment Summary:**
+**Quick Deploy:**
 ```bash
-# 1. Set up Google Cloud
-gcloud projects create btl-costing-prod
-gcloud config set project btl-costing-prod
+# One-command automated deployment
+./deploy.sh
 
-# 2. Create PostgreSQL database
-gcloud sql instances create btl-db --database-version=POSTGRES_15
-
-# 3. Deploy to Cloud Run
-gcloud run deploy btl-costing --source . --region us-central1
-
-# See QUICKSTART_GOOGLE_CLOUD.md for complete instructions
+# Or manual steps:
+wrangler login
+wrangler d1 create webapp-production
+# Update wrangler.jsonc with database_id
+wrangler d1 migrations apply webapp-production --remote
+npm run build
+wrangler pages deploy dist --project-name webapp
 ```
 
 **Estimated Costs:**
-- ~$15-30/month (includes $300 free credit for new users)
-- Cloud Run: ~$5-10/month
-- Cloud SQL: ~$10-20/month
+- **FREE** for most usage!
+- 500,000 requests/month FREE
+- 5GB database storage FREE
+- Unlimited bandwidth FREE
+- Paid tier: $5/month (if you exceed free tier)
 
-**Backup:** Original Cloudflare version saved at:  
-https://page.gensparksite.com/project_backups/btl-costing-cloudflare-version.tar.gz
+**Why Cloudflare?**
+- ✅ Global edge network
+- ✅ Automatic HTTPS
+- ✅ D1 SQLite database included
+- ✅ Generous free tier
+- ✅ Easy GitHub integration
+- ✅ One-command deployment
 
 ---
 
-### Alternative: Cloudflare Pages Deployment
+### Alternative: Google Cloud Platform
 
-**Note:** Cloudflare deployment had authentication issues. Google Cloud deployment is recommended.
+**For enterprise deployments with PostgreSQL:**
+
+See `QUICKSTART_GOOGLE_CLOUD.md` and `DEPLOY_GOOGLE_CLOUD.md` for:
+- Node.js + PostgreSQL setup
+- Docker containerization
+- Cloud Run deployment
+- ~$15-30/month cost
 
 #### 1. Create Production Database
 
