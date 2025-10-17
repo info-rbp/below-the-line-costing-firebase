@@ -13,12 +13,21 @@ dist/
 
 # deps
 node_modules/
+functions/node_modules/
 .wrangler
 
 # env
 .env
 .env.production
+.env.local
 .dev.vars
+functions/.env
+
+# Firebase
+.firebase/
+firebase-debug.log
+firebase-debug.*.log
+.firebaserc.local
 
 # logs
 logs/
@@ -31,3 +40,11 @@ lerna-debug.log*
 
 # misc
 .DS_Store
+*.backup
+*.bak
+*.tar.gz
+*.zip
+
+# Cloudflare (legacy - keep for reference)
+wrangler.toml
+wrangler.jsonc
