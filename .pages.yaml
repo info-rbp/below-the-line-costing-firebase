@@ -1,0 +1,13 @@
+# Cloudflare Pages configuration
+# This file tells Cloudflare Pages how to build and deploy your application
+
+# Build configuration
+build:
+  command: npm run build
+  output_dir: dist
+  
+# Environment variables (set these in Cloudflare dashboard)
+# - JWT_SECRET: Generate with `openssl rand -base64 32`
+
+# D1 database binding
+# Configure in wrangler.jsonc

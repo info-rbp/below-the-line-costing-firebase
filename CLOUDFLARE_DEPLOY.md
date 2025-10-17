@@ -214,16 +214,34 @@ Visit: `https://webapp-xxx.pages.dev`
 ### 6.1 Connect to GitHub
 
 1. Go to: https://dash.cloudflare.com
-2. Navigate to: **Pages** → **webapp**
-3. Click **Settings** → **Builds & deployments**
-4. Click **Connect to Git**
-5. Select your GitHub repository: `info-rbp/belowtheline-app`
-6. Configure:
+2. Navigate to: **Pages** → **Create a project**
+3. Click **Connect to Git**
+4. Select **GitHub** and authorize
+5. Select your repository: `info-rbp/belowtheline-app`
+6. Configure build settings:
    - **Production branch:** `main`
+   - **Framework preset:** None
    - **Build command:** `npm run build`
    - **Build output directory:** `dist`
+   - **Root directory:** `/` (leave empty)
+7. Click **Save and Deploy**
 
-### 6.2 Test Automatic Deployment
+**IMPORTANT:** Do NOT use `npx wrangler deploy` as the build command. This is automatically handled by Cloudflare Pages.
+
+### 6.2 Bind D1 Database in Cloudflare Pages
+
+After connecting to GitHub, you need to bind your D1 database:
+
+1. Go to your Pages project in Cloudflare dashboard
+2. Navigate to **Settings** → **Functions**
+3. Scroll down to **D1 database bindings**
+4. Click **Add binding**
+5. Configure:
+   - **Variable name:** `DB` (must match wrangler.jsonc)
+   - **D1 database:** Select `webapp-production`
+6. Click **Save**
+
+### 6.3 Test Automatic Deployment
 
 ```bash
 # Make a small change
@@ -239,6 +257,7 @@ Cloudflare will automatically:
 1. Detect the push
 2. Build your application
 3. Deploy to production
+4. Use the D1 database binding
 
 ---
 
