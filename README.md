@@ -1,635 +1,403 @@
-# BTL Costing Application
+# BTL Costing Application - Firebase Version
 
 ## Project Overview
 
-**Below the Line (BTL) Costing Application** is a modern, lightweight web-based project costing and financial management system designed to replace complex spreadsheets with a streamlined database-driven solution.
+**Below the Line (BTL) Costing Application** is a modern web-based project costing and financial management system, now powered by Google Firebase for scalable cloud deployment.
+
+### Technology Stack
+
+- **Backend**: Express.js + Firebase Functions
+- **Frontend**: Vanilla JavaScript with Tailwind CSS  
+- **Database**: Cloud Firestore (NoSQL)
+- **Hosting**: Firebase Hosting
+- **Authentication**: JWT with bcrypt password hashing
+- **Platform**: Google Cloud Platform / Firebase
 
 ### Key Features
 
-- **Enhanced 6-Step Project Creation Wizard**: Complete wizard for creating projects from scratch
-  - Step 1: Project Basics with **Client Dropdown from CRM** (8 pre-loaded clients)
-  - Step 2: **Hierarchical Milestone Tree Builder** (3-level deep parent-child structure)
-  - Step 3: Labour Costs (WBS builder with actual vs banded rate toggle)
-  - Step 4: Material Costs with **Materials Master Integration** (30 pre-loaded materials)
-  - Step 5: Payment Schedule (billing milestones with revenue tracking)
-  - Step 6: Review & Create with **Approval Workflow Options** (Draft/Active/Submit)
-  
+- **Enhanced 6-Step Project Creation Wizard**
+  - Project Basics with Client Dropdown (CRM integration)
+  - Hierarchical Milestone Tree Builder (3-level structure)
+  - Labour Costs with WBS builder
+  - Material Costs with Materials Master Integration
+  - Payment Schedule with revenue tracking
+  - Review & Create with Approval Workflow
+
 - **Manager Settings Dashboard** (Admin/Manager Only)
-  - **Clients CRM**: Complete customer relationship management
-    - Full CRUD with 8 pre-loaded clients
-    - Search & filters (type, industry, status)
-    - Project history tracking
-    - Add/Edit modal forms
-  - **Materials Master Catalog**: Pre-defined materials library
-    - 30 materials across 5 categories (Equipment, Software, Services, Consumables, Hardware)
-    - Search & filters (category, cost type, status)
-    - Standard costs and suppliers
-    - Add/Edit modal forms
-  - **Employee Master**: Manage employee database
-  - **System Settings**: Configure system defaults
-  
+  - Clients CRM with full CRUD operations
+  - Materials Master Catalog management
+  - Employee Master database
+  - System Settings configuration
+
 - **Approval Workflow System** (Manager/Admin Only)
-  - **Pending Approvals View**: Review project submissions
-  - **Approval Modal**: Approve/Reject with comments
-  - Badge notifications showing pending count
-  - Complete audit trail (submitted/approved/rejected timestamps)
-  - Status indicators throughout the system
-  
+  - Pending Approvals view
+  - Approve/Reject with comments
+  - Complete audit trail
+  - Status indicators
+
 - **Enhanced Project Management**
-  - **Project Status Indicators**: Visual badges with icons (Active, Completed, On-Hold, Planning)
-  - **Approval Status Column**: Draft, Pending, Approved, Rejected badges
-  - Track projects with client information, dates, and financial settings
+  - Project status indicators
+  - Approval status tracking
+  - Client information management
   - Real-time margin warnings
-  
-- **Personnel Register**: Manage staff database with hourly costs and banded rates
-- **Cost Tracking**: Labour cost line items with actual vs banded rate options
-- **Material Costs**: Non-labour costs with milestone, monthly, and one-time classifications
+
+- **Personnel Register**: Staff database with hourly costs and banded rates
+- **Cost Tracking**: Labour and material cost management
 - **G&A Calculations**: Automatic General & Administrative cost allocation
 - **Multi-user Authentication**: Role-based access control (Admin, Manager, User, Viewer)
-- **Real-time Dashboard**: Live project metrics, margin tracking, and cost summaries
-- **Third-party Integrations**: Ready for Xero and Microsoft Project API connections
+- **Real-time Dashboard**: Live project metrics and cost summaries
 
-## URLs
-
-- **Development**: https://3000-itedfxbrbnbnmkdyi7ow9-2b54fc91.sandbox.novita.ai
-- **API Health Check**: https://3000-itedfxbrbnbnmkdyi7ow9-2b54fc91.sandbox.novita.ai/api/health
-- **GitHub**: (To be configured)
-- **Production**: (To be deployed to Cloudflare Pages)
-
-## Technology Stack
-
-- **Backend**: Hono (lightweight web framework)
-- **Frontend**: Vanilla JavaScript with Tailwind CSS
-- **Database**: Cloudflare D1 (SQLite-based)
-- **Runtime**: Cloudflare Workers/Pages
-- **Process Manager**: PM2 (development)
-- **API Design**: RESTful with JWT authentication
-
-## Data Architecture
-
-### Core Data Models
-
-1. **Users**: Authentication and role-based access
-   - Admin, Manager, User, Viewer roles
-   - JWT token-based authentication
-
-2. **Projects**: Central project entity
-   - Project code, name, client reference (FK to clients)
-   - Tax rate, G&A percentage, status
-   - **Approval workflow fields**: approval_status, submitted_at, approved_at, approved_by, rejection_reason
-   - Calculated totals and margin
-
-3. **Clients (CRM)**: Customer relationship management
-   - Client code, name, type, industry
-   - Primary contact information (name, email, phone)
-   - Financial terms (payment terms, credit limit)
-   - Address, website, notes
-   - Active/inactive status
-   - **Pre-loaded**: 8 clients across various industries
-
-4. **Materials Master**: Pre-defined materials catalog
-   - Material code, name, category
-   - Default unit cost, unit of measure
-   - Supplier name, lead time
-   - Cost type (one-time, monthly, annual)
-   - Minimum order quantity, description
-   - Active/inactive status
-   - **Pre-loaded**: 30 materials across 5 categories
-
-5. **Project Approvals**: Approval audit trail
-   - Project reference, approver reference
-   - Action (submitted, approved, rejected)
-   - Comments, timestamps
-   - Complete history of approval actions
-
-6. **Personnel**: Staff database
-   - Employee ID, name, role, level
-   - Hourly cost and banded rates
-
-7. **Rate Bands**: Role-based costing rates
-   - Band name, level, description
-   - Standard hourly rates
-
-8. **Milestones**: Project milestones with hierarchy
-   - Milestone code, name, date
-   - **Hierarchical fields**: parent_milestone_id, milestone_level, milestone_path, is_parent
-   - Supports 3-level tree structure (Root → Level 1 → Level 2)
-   - Linked to cost items
-
-9. **Cost Line Items**: Labour costs
-   - WBS code, task description
-   - Actual vs banded rate toggle
-   - Hours, rates, G&A application
-   - Calculated costs (base, G&A, total)
-
-10. **Material Costs**: Non-labour expenses
-    - Description, category, supplier
-    - **Materials master reference**: material_master_id (optional FK)
-    - Cost type: milestone, monthly, one-time
-    - Quantity, unit cost, G&A application
-    - Material code (from master or custom)
-
-11. **Payment Schedule**: Billing and invoices
-    - Payment milestones, dates, amounts
-    - Invoice tracking and status
-
-12. **Cash Flow**: Month-by-month tracking
-    - Labour and material outflows
-    - Revenue inflow, net cash flow
-
-13. **Integration Data**: Xero and MS Project imports
-
-### Database Schema
-
-The application uses Cloudflare D1 (SQLite) with a normalized relational schema. See `migrations/0001_initial_schema.sql` for full details.
-
-**Key relationships:**
-- Projects → Milestones (1:many)
-- Projects → Cost Line Items (1:many)
-- Projects → Material Costs (1:many)
-- Cost Line Items → Personnel (many:1, optional)
-- Cost Line Items → Rate Bands (many:1, optional)
-- Cost Items → Milestones (many:1, optional)
-
-## User Guide
-
-### Demo Credentials
-
-```
-Admin:    admin@jl2group.com / admin123
-Manager:  manager@jl2group.com / admin123
-User:     user@jl2group.com / admin123
-```
-
-### Features Overview
-
-#### 1. Dashboard
-- Active project count
-- Personnel statistics
-- Total revenue tracking
-- Average margin percentage
-- Recent projects table
-
-#### 2. Projects Management
-
-**Project Creation Wizard:**
-- Click "New Project" button to launch 6-step wizard
-- Step-by-step guided process for complete project setup
-- Real-time cost calculations throughout wizard
-- Validation at each step before proceeding
-- Financial summary with margin analysis before creation
-- Single atomic transaction creates all project data
-
-**Project Operations:**
-- Create/edit/delete projects
-- Set project parameters (dates, tax, G&A)
-- Track project status
-- Calculate totals and margins
-- View detailed cost breakdowns
-
-#### 3. Personnel Register
-- Maintain staff database
-- Set hourly costs and banded rates
-- Track employee roles and levels
-- Active/inactive status management
-
-#### 4. Cost Tracking
-
-**Labour Costs:**
-- Add cost line items with WBS codes
-- Choose between actual personnel or banded rates
-- Assign to milestones
-- Toggle G&A application
-- Automatic cost calculations
-
-**Material Costs:**
-- Track non-labour expenses
-- Classify as milestone, monthly, or one-time
-- Set quantities and unit costs
-- Apply G&A where appropriate
-- Track suppliers
-
-#### 5. Integrations
-
-**Xero Integration:**
-- OAuth 2.0 connection flow
-- Sync invoices from Xero
-- Import invoice data for reconciliation
-- Requires Xero API credentials
-
-**Microsoft Project Integration:**
-- Import MS Project XML files
-- Map tasks to cost line items
-- Import resource assignments
-- Export project data for MS Project
-
-## API Documentation
-
-### Authentication
-
-**POST** `/api/auth/login`
-```json
-Request: {
-  "email": "admin@jl2group.com",
-  "password": "admin123"
-}
-
-Response: {
-  "success": true,
-  "token": "eyJhbGc...",
-  "user": { ... }
-}
-```
-
-**GET** `/api/auth/me` (Requires Bearer token)
-
-**POST** `/api/auth/register` (Admin only)
-
-**POST** `/api/auth/change-password`
-
-### Projects
-
-**GET** `/api/projects` - List all projects
-
-**GET** `/api/projects/:id` - Get project details
-
-**POST** `/api/projects` - Create project (Manager+)
-
-**PUT** `/api/projects/:id` - Update project (Manager+)
-
-**DELETE** `/api/projects/:id` - Delete project (Admin only)
-
-**POST** `/api/projects/:id/recalculate` - Recalculate totals
-
-**POST** `/api/projects/with-details` - Create project with all related data (Manager+)
-- Body: `{ project: {...}, milestones: [...], labour_costs: [...], material_costs: [...], payment_schedule: [...] }`
-- Single atomic transaction creates project and all related entities
-- Used by project creation wizard
-
-### Milestones
-
-**GET** `/api/milestones?project_id=1` - List milestones
-
-**GET** `/api/milestones/:id` - Get milestone details
-
-**POST** `/api/milestones` - Create milestone (Manager+)
-
-**POST** `/api/milestones/bulk` - Create multiple milestones (Manager+)
-
-**PUT** `/api/milestones/:id` - Update milestone (Manager+)
-
-**DELETE** `/api/milestones/:id` - Delete milestone (Manager+)
-
-### Rate Bands
-
-**GET** `/api/rate-bands?active=true` - List rate bands
-
-**GET** `/api/rate-bands/:id` - Get rate band details
-
-**POST** `/api/rate-bands` - Create rate band (Manager+)
-
-**PUT** `/api/rate-bands/:id` - Update rate band (Manager+)
-
-**DELETE** `/api/rate-bands/:id` - Delete rate band (Admin only)
-
-### Personnel
-
-**GET** `/api/personnel` - List all personnel
-
-**GET** `/api/personnel/:id` - Get personnel details
-
-**POST** `/api/personnel` - Create personnel (Manager+)
-
-**PUT** `/api/personnel/:id` - Update personnel (Manager+)
-
-**DELETE** `/api/personnel/:id` - Delete personnel (Admin only)
-
-### Costs
-
-**Labour Costs:**
-- **GET** `/api/costs/labour?project_id=1`
-- **POST** `/api/costs/labour`
-- **PUT** `/api/costs/labour/:id`
-- **DELETE** `/api/costs/labour/:id`
-
-**Material Costs:**
-- **GET** `/api/costs/material?project_id=1`
-- **POST** `/api/costs/material`
-- **PUT** `/api/costs/material/:id`
-- **DELETE** `/api/costs/material/:id`
-
-### Integrations
-
-**Xero:**
-- **GET** `/api/integrations/xero/status`
-- **GET** `/api/integrations/xero/auth-url` (Admin only)
-- **POST** `/api/integrations/xero/sync-invoices` (Manager+)
-
-**Microsoft Project:**
-- **GET** `/api/integrations/msp/status`
-- **POST** `/api/integrations/msp/upload` (Manager+)
-- **POST** `/api/integrations/msp/export` (User+)
-
-## Development Setup
+## Quick Start
 
 ### Prerequisites
 
-- Node.js 18+ (for local development)
-- npm or yarn
-- Wrangler CLI (for Cloudflare)
+- Node.js 18+ installed
+- Firebase CLI installed: `npm install -g firebase-tools`
+- Google account
+- Firebase project created (Blaze plan)
 
-### Local Development
+### Installation
 
 ```bash
-# Install dependencies
+# Clone or download the project
+cd /home/user/webapp
+
+# Install root dependencies (if any)
 npm install
 
-# Build the application
-npm run build
-
-# Apply database migrations (local)
-npm run db:migrate:local
-
-# Seed database with sample data
-npm run db:seed
-
-# Start development server (sandbox)
-npm run dev:sandbox
-
-# Or use PM2 for daemon process
-pm2 start ecosystem.config.cjs
-pm2 logs webapp --nostream
+# Install Firebase Functions dependencies
+cd functions
+npm install
+cd ..
 ```
 
-### Database Management
+### Firebase Setup
 
-```bash
-# Reset database (delete and recreate)
-npm run db:reset
-
-# Execute SQL command
-npm run db:console:local
-
-# Example queries
-SELECT * FROM users;
-SELECT * FROM projects;
-SELECT * FROM cost_line_items WHERE project_id = 1;
-```
-
-## Deployment
-
-### 🚀 Cloudflare Pages Deployment (Recommended)
-
-**Your application is ready for Cloudflare Pages!**
-
-**📖 Full Guide:** See `CLOUDFLARE_DEPLOY.md` (complete instructions)
-
-**Quick Deploy:**
-```bash
-# One-command automated deployment
-./deploy.sh
-
-# Or manual steps:
-wrangler login
-wrangler d1 create webapp-production
-# Update wrangler.jsonc with database_id
-wrangler d1 migrations apply webapp-production --remote
-npm run build
-wrangler pages deploy dist --project-name webapp
-```
-
-**Estimated Costs:**
-- **FREE** for most usage!
-- 500,000 requests/month FREE
-- 5GB database storage FREE
-- Unlimited bandwidth FREE
-- Paid tier: $5/month (if you exceed free tier)
-
-**Why Cloudflare?**
-- ✅ Global edge network
-- ✅ Automatic HTTPS
-- ✅ D1 SQLite database included
-- ✅ Generous free tier
-- ✅ Easy GitHub integration
-- ✅ One-command deployment
-
----
-
-### Alternative: Google Cloud Platform
-
-**For enterprise deployments with PostgreSQL:**
-
-See `QUICKSTART_GOOGLE_CLOUD.md` and `DEPLOY_GOOGLE_CLOUD.md` for:
-- Node.js + PostgreSQL setup
-- Docker containerization
-- Cloud Run deployment
-- ~$15-30/month cost
-
-#### 1. Create Production Database
-
-```bash
-# Create D1 database in Cloudflare
-npx wrangler d1 create webapp-production
-
-# Copy the database_id and update wrangler.jsonc
-```
-
-#### 2. Apply Migrations to Production
-
-```bash
-npm run db:migrate:prod
-```
-
-#### 3. Configure Environment Variables
-
-```bash
-# Set JWT secret (production)
-npx wrangler pages secret put JWT_SECRET --project-name webapp
-
-# Xero integration (optional)
-npx wrangler pages secret put XERO_CLIENT_ID --project-name webapp
-npx wrangler pages secret put XERO_CLIENT_SECRET --project-name webapp
-
-# MS Project integration (optional)
-npx wrangler pages secret put MSP_CLIENT_ID --project-name webapp
-npx wrangler pages secret put MSP_CLIENT_SECRET --project-name webapp
-```
-
-#### 4. Deploy to Cloudflare Pages
-
-```bash
-# Build and deploy
-npm run deploy:prod
-
-# Or create project first
-npx wrangler pages project create webapp --production-branch main
-npm run build
-npx wrangler pages deploy dist --project-name webapp
-```
-
-### Post-Deployment
-
-1. **Seed Production Database** (first time only):
+1. **Login to Firebase**
    ```bash
-   # Create production seed data without sample project
-   npx wrangler d1 execute webapp-production --command="
-     INSERT INTO users (email, password_hash, full_name, role) 
-     VALUES ('admin@yourdomain.com', 'HASH', 'Admin', 'admin')
-   "
+   firebase login
    ```
 
-2. **Test Production API**:
+2. **Initialize Firebase**
    ```bash
-   curl https://webapp.pages.dev/api/health
+   firebase init
+   ```
+   Select: Functions, Firestore, Hosting
+
+3. **Update Project ID**
+   Edit `.firebaserc` and set your Firebase project ID:
+   ```json
+   {
+     "projects": {
+       "default": "your-firebase-project-id"
+     }
+   }
    ```
 
-3. **Configure Custom Domain** (optional):
+4. **Set Environment Variables**
    ```bash
-   npx wrangler pages domain add yourdomain.com --project-name webapp
+   firebase functions:config:set jwt.secret="your-secret-key"
    ```
+
+5. **Deploy to Firebase**
+   ```bash
+   firebase deploy
+   ```
+
+### Initial Setup
+
+1. **Create Admin User** in Firestore Console:
+   - Collection: `users`
+   - Fields:
+     - `email`: "admin@jl2group.com"
+     - `password_hash`: (generate using `node scripts/hash_password.js admin123`)
+     - `full_name`: "Admin User"
+     - `role`: "admin"
+     - `is_active`: true
+     - `created_at`: (current ISO timestamp)
+     - `updated_at`: (current ISO timestamp)
+
+2. **Access Application**
+   - URL: `https://your-project.web.app`
+   - Login with admin credentials
+
+## Local Development
+
+### Using Firebase Emulators
+
+```bash
+# Start all emulators
+firebase emulators:start
+
+# Access application at:
+# - Hosting: http://localhost:5000
+# - Functions: http://localhost:5001
+# - Firestore: http://localhost:8080
+# - Emulator UI: http://localhost:4000
+```
+
+### Testing
+
+```bash
+# Test API health
+curl http://localhost:5000/api/health
+
+# Test login
+curl -X POST http://localhost:5000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@jl2group.com","password":"admin123"}'
+```
 
 ## Project Structure
 
 ```
 webapp/
-├── src/
-│   ├── index.tsx              # Main application entry
-│   ├── types.ts               # TypeScript type definitions
-│   ├── lib/
-│   │   └── auth.ts            # Authentication utilities
-│   ├── middleware/
-│   │   └── auth.ts            # Auth middleware
-│   └── routes/
-│       ├── auth.ts            # Auth routes
-│       ├── projects.ts        # Project management
-│       ├── personnel.ts       # Personnel management
-│       ├── costs.ts           # Cost tracking
-│       └── integrations.ts    # Third-party integrations
-├── public/
-│   └── static/
-│       └── app.js             # Frontend SPA
-├── migrations/
-│   └── 0001_initial_schema.sql
-├── seed.sql                   # Sample data
-├── ecosystem.config.cjs       # PM2 configuration
-├── wrangler.jsonc            # Cloudflare configuration
-├── package.json              # Dependencies and scripts
-└── README.md                 # This file
+├── functions/                    # Firebase Functions (Express.js API)
+│   ├── src/
+│   │   ├── routes/              # API route handlers
+│   │   │   ├── auth.js          # Authentication
+│   │   │   ├── projects.js      # Project management
+│   │   │   ├── personnel.js     # Personnel management
+│   │   │   ├── costs.js         # Cost tracking
+│   │   │   ├── milestones.js    # Milestones
+│   │   │   ├── rateBands.js     # Rate bands
+│   │   │   ├── clients.js       # CRM clients
+│   │   │   └── materialsMaster.js # Materials catalog
+│   │   ├── middleware/
+│   │   │   └── auth.js          # Auth middleware
+│   │   ├── lib/
+│   │   │   └── auth.js          # Auth utilities
+│   │   └── config/              # Configuration files
+│   ├── index.js                 # Main Functions entry point
+│   └── package.json             # Functions dependencies
+├── public/                      # Static frontend files
+│   ├── index.html              # Main HTML file
+│   └── static/                 # JS, CSS, assets
+│       ├── app.js              # Frontend application
+│       ├── wizard.js           # Project wizard
+│       └── wizard-helpers.js   # Wizard utilities
+├── scripts/                     # Utility scripts
+│   └── hash_password.js        # Password hash generator
+├── firebase.json               # Firebase configuration
+├── .firebaserc                 # Firebase project settings
+├── firestore.rules            # Firestore security rules
+├── firestore.indexes.json     # Firestore indexes
+├── .gitignore                 # Git ignore file
+├── package.json               # Root package.json
+├── FIREBASE_DEPLOYMENT_GUIDE.md # Deployment guide
+└── README_FIREBASE.md         # This file
 ```
 
-## Deployment Status
+## API Documentation
 
-### Local Development
-- ✅ **Cloudflare Workers Version**: Running and tested (backup available)
-- ✅ **Google Cloud Version**: Converted and ready
+### Authentication
 
-### Production Deployment
-- ✅ **Google Cloud Ready**: All files created, deployment guide complete
-  - Node.js server: `src/server.js`
-  - PostgreSQL migrations: `migrations-postgres/`
-  - Docker container: `Dockerfile`
-  - Deployment docs: `QUICKSTART_GOOGLE_CLOUD.md` & `DEPLOY_GOOGLE_CLOUD.md`
-- ⏳ **Google Cloud Deployed**: Awaiting user deployment
-- ⏳ **GitHub Repository**: Ready to push
-- ⏳ **Custom Domain**: Not configured
+**POST** `/api/auth/login` - User login
+**POST** `/api/auth/register` - User registration (Admin only)
+**GET** `/api/auth/me` - Get current user
+**POST** `/api/auth/change-password` - Change password
 
-### Integrations
-- ⏳ **Xero Integration**: Infrastructure ready, credentials needed
-- ⏳ **MS Project Integration**: Infrastructure ready
+### Projects
 
-## Next Steps
+**GET** `/api/projects` - List all projects
+**GET** `/api/projects/:id` - Get project details
+**POST** `/api/projects` - Create project (Manager+)
+**PUT** `/api/projects/:id` - Update project (Manager+)
+**DELETE** `/api/projects/:id` - Delete project (Admin only)
+**POST** `/api/projects/:id/recalculate` - Recalculate totals
 
-### Immediate (High Priority)
+### Personnel
 
-1. **Deploy to Google Cloud** (15-30 minutes)
-   - Follow `QUICKSTART_GOOGLE_CLOUD.md` for step-by-step guide
-   - Create Google Cloud account (get $300 free credit)
-   - Deploy to Cloud Run with PostgreSQL
-   - Get live production URL
+**GET** `/api/personnel` - List all personnel
+**GET** `/api/personnel/:id` - Get personnel details
+**POST** `/api/personnel` - Create personnel (Manager+)
+**PUT** `/api/personnel/:id` - Update personnel (Manager+)
+**DELETE** `/api/personnel/:id` - Delete personnel (Admin only)
 
-2. **Setup GitHub Repository**
-   - Push code to GitHub
-   - Configure CI/CD with Cloud Build (optional)
+### Costs
 
-3. **Production Configuration**
-   - Change default admin password
-   - Configure database backups
-   - Set up monitoring and alerts
-   - Add team members
+**Labour Costs:**
+- **GET** `/api/costs/labour?project_id=xxx`
+- **POST** `/api/costs/labour`
+- **PUT** `/api/costs/labour/:id`
+- **DELETE** `/api/costs/labour/:id`
 
-### Short-term (Medium Priority)
+**Material Costs:**
+- **GET** `/api/costs/material?project_id=xxx`
+- **POST** `/api/costs/material`
+- **PUT** `/api/costs/material/:id`
+- **DELETE** `/api/costs/material/:id`
 
-4. **Enhanced Features**
-   - Milestone management UI
-   - Payment schedule tracking
-   - Cash flow visualization
-   - Advanced reporting (PDF export)
+### Milestones
 
-5. **Integration Setup**
-   - Xero OAuth flow completion
-   - MS Project file parser
-   - Real-time sync capabilities
+**GET** `/api/milestones?project_id=xxx` - List milestones
+**POST** `/api/milestones` - Create milestone (Manager+)
+**PUT** `/api/milestones/:id` - Update milestone (Manager+)
+**DELETE** `/api/milestones/:id` - Delete milestone (Manager+)
 
-6. **User Experience**
-   - Project creation wizard
-   - Bulk cost item import
-   - Advanced filters and search
-   - Mobile responsive improvements
+### Rate Bands
 
-### Long-term (Future Enhancements)
+**GET** `/api/rate-bands` - List rate bands
+**POST** `/api/rate-bands` - Create rate band (Manager+)
+**PUT** `/api/rate-bands/:id` - Update rate band (Manager+)
+**DELETE** `/api/rate-bands/:id` - Delete rate band (Admin only)
 
-7. **Advanced Analytics**
-   - Project profitability analysis
-   - Resource utilization tracking
-   - Predictive margin forecasting
-   - Custom report builder
+### Clients
 
-8. **Collaboration Features**
-   - Comments and notes
-   - Task assignments
-   - Email notifications
-   - Activity audit trail
+**GET** `/api/clients` - List all clients
+**POST** `/api/clients` - Create client (Manager+)
+**PUT** `/api/clients/:id` - Update client (Manager+)
+**DELETE** `/api/clients/:id` - Delete client (Admin only)
 
-9. **System Optimization**
-   - Database query optimization
-   - Caching layer (KV/R2)
-   - Performance monitoring
-   - Automated testing suite
+### Materials Master
 
-## Support and Documentation
+**GET** `/api/materials-master` - List all materials
+**POST** `/api/materials-master` - Create material (Manager+)
+**PUT** `/api/materials-master/:id` - Update material (Manager+)
+**DELETE** `/api/materials-master/:id` - Delete material (Admin only)
+
+## Firestore Collections
+
+The application uses the following Firestore collections:
+
+- `users` - User accounts and authentication
+- `projects` - Project information
+- `personnel` - Staff database
+- `rateBands` - Role-based pricing
+- `clients` - CRM client database
+- `materialsMaster` - Pre-defined materials catalog
+- `milestones` - Project milestones
+- `costLineItems` - Labour costs
+- `materialCosts` - Material costs
+- `paymentSchedule` - Billing milestones
+- `projectApprovals` - Approval audit trail
+
+## Deployment
+
+### Deploy Everything
+
+```bash
+firebase deploy
+```
+
+### Deploy Specific Components
+
+```bash
+# Deploy only Functions
+firebase deploy --only functions
+
+# Deploy only Hosting
+firebase deploy --only hosting
+
+# Deploy only Firestore rules
+firebase deploy --only firestore:rules
+
+# Deploy only Firestore indexes
+firebase deploy --only firestore:indexes
+```
+
+### View Logs
+
+```bash
+# View function logs
+firebase functions:log
+
+# Tail logs in real-time
+firebase functions:log --only api
+```
+
+## Monitoring and Costs
+
+### Firebase Console
+
+Access monitoring and usage:
+1. Go to [Firebase Console](https://console.firebase.google.com/)
+2. Select your project
+3. Navigate to:
+   - **Functions** → View invocations and execution time
+   - **Firestore** → View database usage and reads/writes
+   - **Hosting** → View bandwidth and requests
+
+### Cost Monitoring
+
+Set up budget alerts in Firebase Console:
+1. Go to "Usage and billing"
+2. Set budget alerts
+3. Recommended: $25/month alert
+
+**Expected Costs:**
+- Low traffic (<10K requests/month): $0-5/month
+- Medium traffic (<50K requests/month): $5-15/month
+- High traffic (<200K requests/month): $15-40/month
+
+## Security
+
+### Firestore Security Rules
+
+Security rules are defined in `firestore.rules`:
+- Users can only read their own data
+- Managers and Admins can write to most collections
+- All operations require authentication
+
+### Best Practices
+
+1. Change default admin password immediately
+2. Rotate JWT secret regularly
+3. Review Firestore rules before production
+4. Enable Firebase App Check
+5. Set up Cloud Monitoring alerts
+6. Use HTTPS only (enforced by Firebase)
+7. Implement rate limiting for sensitive endpoints
+
+## Troubleshooting
 
 ### Common Issues
 
-**Login fails:**
-- Check password hash generation
-- Verify user exists in database
-- Check JWT_SECRET configuration
+**Issue**: "Billing account not configured"
+- **Solution**: Upgrade to Blaze plan in Firebase Console
 
-**Database errors:**
-- Ensure migrations applied
-- Check D1 database binding
-- Verify local vs production database
+**Issue**: Permission denied in Firestore
+- **Solution**: Deploy Firestore rules: `firebase deploy --only firestore:rules`
 
-**Integration issues:**
-- Confirm API credentials configured
-- Check callback URLs
-- Review access token expiration
+**Issue**: Functions deployment fails
+- **Solution**: Check Node.js version (18+), reinstall dependencies
 
-### Troubleshooting
+**Issue**: CORS errors
+- **Solution**: Already configured in Express app, check browser console
 
-```bash
-# Check PM2 logs
-pm2 logs webapp --nostream
+**Issue**: Cannot connect to API
+- **Solution**: Verify `firebase.json` rewrites configuration
 
-# Check database content
-npm run db:console:local
+## Documentation
 
-# Rebuild and restart
-npm run build && pm2 restart webapp
+- **Deployment Guide**: See `FIREBASE_DEPLOYMENT_GUIDE.md`
+- **Firebase Docs**: https://firebase.google.com/docs
+- **Cloud Functions**: https://firebase.google.com/docs/functions
+- **Firestore**: https://firebase.google.com/docs/firestore
 
-# Reset database
-npm run db:reset
-```
+## Support
+
+For issues or questions:
+- **Email**: admin@jl2group.com
+- **Firebase Support**: https://firebase.google.com/support
+
+## Migration Notes
+
+This application was migrated from Cloudflare Workers/Pages to Firebase on October 17, 2025.
+
+**Key Changes:**
+- Hono → Express.js
+- Cloudflare D1 (SQLite) → Cloud Firestore (NoSQL)
+- Cloudflare Workers → Firebase Functions
+- Cloudflare Pages → Firebase Hosting
+- Web Crypto API → bcryptjs + jsonwebtoken
+
+**Backup**: Original Cloudflare version backed up as `webapp-cloudflare-backup-YYYYMMDD.tar.gz`
+
+## Version History
+
+- **v2.0** (October 2025) - Firebase migration
+- **v1.0** (September 2025) - Initial Cloudflare version
 
 ## License
 
@@ -638,90 +406,10 @@ Proprietary - JL2 Group
 ## Credits
 
 **Developer**: Gianpaulo Coletti - Remote Business Partner (Tiberius Holdings Group)
-
 **Client**: JL2 Group
-
-**Version**: 1.0
-
-**Last Updated**: October 16, 2025
-
-**Note**: Application converted from Cloudflare Workers (D1) to Node.js + PostgreSQL for Google Cloud deployment on October 16, 2025. Original Cloudflare version backed up and available for download.
-
-## Current Status
-
-### ✅ Phase 1 Completed - Core Application (September 2025)
-
-1. **Core Backend API** - All RESTful endpoints operational
-2. **Database Schema** - Initial schema with 13 tables and relationships
-3. **Authentication System** - JWT-based with role-based access control
-4. **Project Creation Wizard** - Full 6-step wizard implemented and integrated
-5. **Frontend Application** - SPA with dashboard, projects, personnel views
-6. **Cost Calculations** - Automatic G&A allocation and totals
-7. **Milestone Management** - CRUD operations with bulk creation
-8. **Rate Bands** - Role-based costing system
-9. **Personnel Register** - 30 employees pre-loaded from Excel
-
-### ✅ Phase 2 Completed - Major Enhancements (October 2025)
-
-**Database Enhancements:**
-- **3 New Tables**: clients, materials_master, project_approvals
-- **Schema Updates**: Added hierarchical milestone fields, approval workflow fields, materials master references
-- **Seed Data**: 8 clients, 30 materials pre-loaded
-
-**Backend API Enhancements:**
-- **Clients API** (`/api/clients`): Full CRUD with filters, project history
-- **Materials Master API** (`/api/materials-master`): Full CRUD with categories
-- **Approval Workflow APIs**: 
-  - `POST /projects/:id/submit-for-approval`
-  - `POST /projects/:id/approve`
-  - `POST /projects/:id/reject`
-  - `GET /projects/pending-approval`
-  - `GET /projects/my-submissions`
-- **Milestone Tree API** (`GET /api/milestones/tree`): Hierarchical structure support
-
-**Frontend UI Enhancements:**
-1. **Manager Settings Dashboard** (Admin/Manager Only)
-   - Clients CRM table with search/filters and Add/Edit modals
-   - Materials Master table with search/filters and Add/Edit modals
-   - Employees tab (placeholder for future)
-   - System Settings tab
-
-2. **Enhanced Project Creation Wizard**
-   - Step 1: Client dropdown (8 clients from CRM, + Add New option)
-   - Step 2: Hierarchical milestone tree builder (3 levels deep)
-   - Step 4: Materials master integration (From Catalog or Custom Entry)
-   - Step 6: Approval workflow options (Draft/Active/Submit)
-
-3. **Approval Workflow UI** (Manager/Admin Only)
-   - Pending Approvals view with badge notifications
-   - Project cards with financial summaries
-   - Approval Review modal with approve/reject actions
-   - Status filtering (Pending/All/Approved/Rejected)
-
-4. **Enhanced Projects Table**
-   - Project Status column with icons (Active/Completed/On-Hold/Planning)
-   - Approval Status column with badges (Draft/Pending/Approved/Rejected)
-   - Visual indicators throughout
-
-### ⏳ Pending Implementation
-
-1. **Production Deployment** - Deploy to Google Cloud Platform
-2. **Xero Integration** - API credentials needed for activation
-3. **MS Project Integration** - XML parsing and import functionality
-4. **Project Editing** - Full edit wizard for existing projects
-5. **Cost Item Editing** - Direct editing of labour and material costs
-6. **Reports** - PDF export and financial reporting
-7. **Cash Flow Tracking** - Month-by-month cash flow management
-
-### 🎯 Next Immediate Actions
-
-1. **Deploy to Google Cloud** (See QUICKSTART_GOOGLE_CLOUD.md)
-2. **Setup GitHub Repository** - Push code and configure CI/CD
-3. **User Acceptance Testing** - Full end-to-end testing with real users
-4. **Project Editing** - Add full edit capabilities for existing projects
-5. **Configure Xero Integration** - Add API credentials when available
-6. **Production Monitoring** - Setup error tracking and analytics (Google Cloud Monitoring)
+**Version**: 2.0 (Firebase)
+**Last Updated**: October 17, 2025
 
 ---
 
-For questions or support, contact: admin@jl2group.com
+For complete deployment instructions, see **FIREBASE_DEPLOYMENT_GUIDE.md**
