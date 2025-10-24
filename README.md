@@ -47,6 +47,29 @@
 - **Multi-user Authentication**: Role-based access control (Admin, Manager, User, Viewer)
 - **Real-time Dashboard**: Live project metrics and cost summaries
 
+## Cloudflare Pages Direct Upload Deployment
+
+This repository now includes a pre-built Cloudflare Pages bundle under `dist/` along with a helper script that packages it for the **Direct Upload** workflow.
+
+1. Install dependencies (needed only once):
+   ```bash
+   npm install
+   ```
+2. Build or refresh the bundle if you have made source changes (this project ships with a compiled bundle already):
+   ```bash
+   npm run build
+   ```
+   > The current `npm run build` placeholder assumes the Worker bundle in `dist/` is already up to date. If you maintain the source, run the appropriate build process before packaging.
+3. Create the upload artefacts:
+   ```bash
+   npm run package:direct-upload
+   ```
+   This command copies everything from `dist/` into `artifacts/pages-direct-upload/` and produces `artifacts/pages-direct-upload.zip`.
+4. In the Cloudflare Pages dashboard, choose **Direct Upload → Upload assets** and provide the ZIP file created in step 3.
+5. After the upload completes, re-configure any bindings (D1, KV, environment variables, secrets) through the Pages project settings because Direct Upload does not read the `wrangler` configuration automatically.
+
+> **Note:** Direct Upload currently lacks feature parity with `wrangler pages deploy`. If your Worker requires bindings such as `env.DB`, make sure those bindings are defined in the Pages dashboard BEFORE testing the deployment. Missing bindings will cause runtime errors even though the upload succeeds.
+
 ## Quick Start
 
 ### Prerequisites

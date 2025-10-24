@@ -21,7 +21,9 @@
     "git:init": "git init && git add . && git commit -m 'Initial commit'",
     "git:commit": "git add . && git commit -m",
     "git:status": "git status",
-    "git:log": "git log --oneline"
+    "git:log": "git log --oneline",
+    "package:direct-upload": "npm run build && node scripts/prepare-direct-upload.cjs",
+    "package:direct-upload:skip-build": "node scripts/prepare-direct-upload.cjs"
   },
   "dependencies": {
     "express": "^4.18.2",
