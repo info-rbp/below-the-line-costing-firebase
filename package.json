@@ -4,7 +4,7 @@
   "scripts": {
     "dev": "node src/server.js",
     "start": "node src/server.js",
-    "build": "echo 'Build complete'",
+    "build": "node scripts/build-cloudflare.cjs",
     "deploy": "firebase deploy --only functions,hosting",
     "deploy:functions": "firebase deploy --only functions",
     "deploy:hosting": "firebase deploy --only hosting",

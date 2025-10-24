@@ -70,6 +70,16 @@ This repository now includes a pre-built Cloudflare Pages bundle under `dist/` a
 
 > **Note:** Direct Upload currently lacks feature parity with `wrangler pages deploy`. If your Worker requires bindings such as `env.DB`, make sure those bindings are defined in the Pages dashboard BEFORE testing the deployment. Missing bindings will cause runtime errors even though the upload succeeds.
 
+### GitHub / Automatic Deployments
+
+If you connect this repository to Cloudflare Pages through GitHub:
+
+- **Build command**: `npm run build`
+- **Build output directory**: `dist`
+- **Deploy command**: *(leave empty)* — Pages will automatically publish the `dist/` assets after the build completes.
+
+The `npm run build` script copies the precompiled Worker bundle and static assets from `cloudflare-build/` into `dist/`, ensuring the Worker (`_worker.js`), routing manifest, and `/static` assets exist for the deployment. Because the Worker depends on bindings (e.g., `DB`), be sure to configure those in the Pages project settings under **Functions → Settings → Bindings**.
+
 ## Quick Start
 
 ### Prerequisites
