@@ -106,20 +106,36 @@ cd ..
 
 ### Initial Setup
 
-1. **Create Admin User** in Firestore Console:
-   - Collection: `users`
-   - Fields:
-     - `email`: "admin@jl2group.com"
-     - `password_hash`: (generate using `node scripts/hash_password.js admin123`)
-     - `full_name`: "Admin User"
-     - `role`: "admin"
-     - `is_active`: true
-     - `created_at`: (current ISO timestamp)
-     - `updated_at`: (current ISO timestamp)
+**Three easy methods to initialize your admin account:**
 
-2. **Access Application**
-   - URL: `https://your-project.web.app`
-   - Login with admin credentials
+#### Option 1: Web-Based Setup (Easiest) ⭐
+1. Deploy the application: `firebase deploy`
+2. Navigate to: `https://your-project.web.app/setup.html`
+3. Complete the setup form (pre-filled with defaults)
+4. Login with your credentials
+
+#### Option 2: Command-Line Script
+```bash
+# Initialize admin user
+npm run setup:init
+
+# Seed default data (optional)
+npm run setup:seed
+
+# Or do both at once
+npm run setup:all
+```
+
+#### Option 3: Manual Firestore Console
+See detailed instructions in **SETUP_GUIDE.md**
+
+**Default Admin Credentials:**
+- Email: `admin@jl2group.com`
+- Password: `admin123`
+
+⚠️ **Change the password after first login!**
+
+For complete setup instructions, see **[SETUP_GUIDE.md](SETUP_GUIDE.md)**
 
 ## Local Development
 

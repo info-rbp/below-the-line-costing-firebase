@@ -27,6 +27,7 @@ app.get('/health', (req, res) => {
 });
 
 // Import routes
+const setupRoutes = require('./src/routes/setup');
 const authRoutes = require('./src/routes/auth');
 const projectsRoutes = require('./src/routes/projects');
 const personnelRoutes = require('./src/routes/personnel');
@@ -37,6 +38,7 @@ const clientsRoutes = require('./src/routes/clients');
 const materialsMasterRoutes = require('./src/routes/materialsMaster');
 
 // Mount routes
+app.use('/setup', setupRoutes(db));
 app.use('/auth', authRoutes(db));
 app.use('/projects', projectsRoutes(db));
 app.use('/personnel', personnelRoutes(db));

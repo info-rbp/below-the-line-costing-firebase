@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BTL Costing - First-Run Setup</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+      body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <div class="max-w-2xl mx-auto">
+            <!-- Header -->
+            <div class="text-center mb-8">
+                <i class="fas fa-cog text-6xl text-blue-600 mb-4"></i>
+                <h1 class="text-4xl font-bold text-gray-800 mb-2">First-Run Setup</h1>
+                <p class="text-gray-600">BTL Costing Application - Initial Configuration</p>
+            </div>
+
+            <!-- Setup Card -->
+            <div id="setupCard" class="bg-white rounded-lg shadow-lg p-8">
+                <div class="mb-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-2xl font-bold text-gray-800">Create Admin Account</h2>
+                        <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">Step 1 of 1</span>
+                    </div>
+                    <p class="text-gray-600">
+                        This setup wizard will create the initial administrator account for your BTL Costing application.
+                        This page will automatically disable after the first admin user is created.
+                    </p>
+                </div>
+
+                <!-- Setup Form -->
+                <form id="setupForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            <i class="fas fa-envelope mr-2"></i>Email Address
+                        </label>
+                        <input type="email" id="email" name="email" required
+                               value="admin@jl2group.com"
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="admin@example.com">
+                        <p class="text-sm text-gray-500 mt-1">This will be your login email</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            <i class="fas fa-user mr-2"></i>Full Name
+                        </label>
+                        <input type="text" id="full_name" name="full_name" required
+                               value="Admin User"
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="John Doe">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            <i class="fas fa-lock mr-2"></i>Password
+                        </label>
+                        <input type="password" id="password" name="password" required
+                               minlength="6"
+                               value="admin123"
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="Enter strong password">
+                        <p class="text-sm text-gray-500 mt-1">Minimum 6 characters</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            <i class="fas fa-lock mr-2"></i>Confirm Password
+                        </label>
+                        <input type="password" id="confirm_password" name="confirm_password" required
+                               minlength="6"
+                               value="admin123"
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="Re-enter password">
+                    </div>
+
+                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                        <div class="flex">
+                            <i class="fas fa-exclamation-triangle text-yellow-600 mr-3 mt-1"></i>
+                            <div>
+                                <h3 class="font-semibold text-yellow-800 mb-1">Important Security Notice</h3>
+                                <ul class="text-sm text-yellow-700 space-y-1">
+                                    <li>• This admin account will have full system access</li>
+                                    <li>• Please use a strong, unique password</li>
+                                    <li>• Change this password after your first login</li>
+                                    <li>• This setup page will be disabled after completion</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" 
+                            class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition font-semibold">
+                        <i class="fas fa-rocket mr-2"></i>Create Admin Account & Initialize System
+                    </button>
+                </form>
+
+                <!-- Error/Success Messages -->
+                <div id="messageArea" class="mt-4 hidden"></div>
+            </div>
+
+            <!-- Already Setup Notice -->
+            <div id="alreadySetupCard" class="bg-white rounded-lg shadow-lg p-8 hidden">
+                <div class="text-center">
+                    <i class="fas fa-check-circle text-6xl text-green-500 mb-4"></i>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">Setup Already Complete</h2>
+                    <p class="text-gray-600 mb-6">
+                        The BTL Costing application has already been initialized with an admin account.
+                        This setup page has been automatically disabled for security.
+                    </p>
+                    <a href="/" class="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition">
+                        <i class="fas fa-sign-in-alt mr-2"></i>Go to Login Page
+                    </a>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="text-center mt-6 text-gray-600 text-sm">
+                <p>BTL Costing Application v2.0 - Firebase Edition</p>
+                <p class="mt-2">© 2025 JL2 Group. All rights reserved.</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+    <script>
+        // Configure axios
+        axios.defaults.baseURL = '/api';
+        axios.defaults.headers.common['Content-Type'] = 'application/json';
+
+        // Check if setup is needed
+        async function checkSetupStatus() {
+            try {
+                const response = await axios.get('/setup/status');
+                if (response.data.setup_complete) {
+                    // Setup already done, show message
+                    document.getElementById('setupCard').classList.add('hidden');
+                    document.getElementById('alreadySetupCard').classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('Failed to check setup status:', error);
+            }
+        }
+
+        // Handle form submission
+        document.getElementById('setupForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const full_name = document.getElementById('full_name').value;
+            const password = document.getElementById('password').value;
+            const confirm_password = document.getElementById('confirm_password').value;
+            
+            // Validate passwords match
+            if (password !== confirm_password) {
+                showMessage('Passwords do not match', 'error');
+                return;
+            }
+            
+            // Show loading
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Creating admin account...';
+            
+            try {
+                const response = await axios.post('/setup/initialize', {
+                    email,
+                    full_name,
+                    password
+                });
+                
+                if (response.data.success) {
+                    showMessage(
+                        'Admin account created successfully! Redirecting to login page...',
+                        'success'
+                    );
+                    
+                    // Redirect to login page after 2 seconds
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 2000);
+                }
+            } catch (error) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+                
+                const errorMsg = error.response?.data?.error || 'Failed to create admin account';
+                showMessage(errorMsg, 'error');
+            }
+        });
+
+        function showMessage(message, type) {
+            const messageArea = document.getElementById('messageArea');
+            const bgColor = type === 'error' ? 'bg-red-50 border-red-200 text-red-700' : 'bg-green-50 border-green-200 text-green-700';
+            const icon = type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle';
+            
+            messageArea.className = `mt-4 p-4 rounded-lg border ${bgColor}`;
+            messageArea.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fas ${icon} mr-2"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            messageArea.classList.remove('hidden');
+        }
+
+        // Check setup status on page load
+        checkSetupStatus();
+    </script>
+</body>
+</html>

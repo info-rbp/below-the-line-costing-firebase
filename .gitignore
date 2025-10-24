@@ -28,6 +28,8 @@ functions/.env
 firebase-debug.log
 firebase-debug.*.log
 .firebaserc.local
+*-firebase-adminsdk-*.json
+service-account-*.json
 
 # logs
 logs/
