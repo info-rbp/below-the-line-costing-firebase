@@ -14,6 +14,7 @@ import { formatError } from "@/lib/errors/format";
 import { useProjectAggregates } from "@/lib/hooks/useProjectAggregates";
 import { LookupForm, type LookupDraft } from "./components/LookupForm";
 import { LookupTable } from "./components/LookupTable";
+import { DemoDataActions } from "./components/DemoDataActions";
 
 type Props = {
   projectId: string;
@@ -210,6 +211,7 @@ export function LookupsPage({ projectId }: Props) {
 
   return (
     <main className="container">
+      <DemoDataActions />
       <div className="card">
         <h1>Lookup administration</h1>
         <p>Manage dropdown values used across the costing wizard.</p>

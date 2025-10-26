@@ -88,9 +88,20 @@ root
    - `projects/{projectId}/costLineItems` – labour and service entries
    - `projects/{projectId}/materialCosts` – material cost entries
    - `projects/{projectId}/paymentSchedules` – invoice records
-   - `projects/{projectId}/lookups/{roles|materials|rateBands}/items` – lookup values that populate dropdowns
+ - `projects/{projectId}/lookups/{roles|materials|rateBands}/items` – lookup values that populate dropdowns
 5. Submit the project from step 6 to mark it as `active` and navigate to `/projects/{projectId}` for the read-only overview.
 6. Manage lookup values for dropdowns at `/projects/{projectId}/admin/lookups`.
+
+## Demo data utilities
+
+The repository now includes scripts that generate a comprehensive sample project for demos and a matching reset utility. Both commands require Firebase Admin credentials via either the `FIREBASE_SERVICE_ACCOUNT` environment variable (containing the JSON payload) or `GOOGLE_APPLICATION_CREDENTIALS` pointing to a service account file.
+
+```bash
+npm run seed   # creates a seeded demo project with milestones, costs, materials, and payments
+npm run reset  # removes any documents created by the seed script (optionally pass --batch <seedBatchId>)
+```
+
+Each seeded document is tagged with `seeded: true` and a `seedBatchId`. Rerunning the seed command produces a fresh batch without affecting manually entered data. Use the UI controls on the lookups admin page to trigger the same seed and reset workflow in Firebase Studio without leaving the app.
 
 ## Wizard behaviour
 
