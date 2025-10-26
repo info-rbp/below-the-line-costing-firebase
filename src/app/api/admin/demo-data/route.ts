@@ -8,7 +8,7 @@ type AdminActionBody = {
 };
 
 function parseAdminBody(value: unknown): AdminActionBody {
-  if (!value || typeof value !== "object") return {};
+  if (!value || typeof value !== "object") return {} as AdminActionBody;
   const record = value as Record<string, unknown>;
   const action = record["action"];
   const seedBatchId = record["seedBatchId"];
@@ -20,8 +20,8 @@ function parseAdminBody(value: unknown): AdminActionBody {
 
 export async function POST(request: Request) {
   try {
-    const body = parseAdminBody(await request.json().catch(() => null));
-    const action = body.action;
+    const body: AdminActionBody = parseAdminBody(await request.json().catch(() => null));
+    const { action, seedBatchId } = body;
     const db = getAdminDb();
 
     if (action === "seed") {
@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     }
 
     if (action === "reset") {
-      const summaries = await resetSeededProjects(db, body?.seedBatchId ? { seedBatchId: body.seedBatchId } : {});
+      const summaries = await resetSeededProjects(db, seedBatchId ? { seedBatchId } : {});
       return NextResponse.json({ status: "ok", summaries });
     }
 
