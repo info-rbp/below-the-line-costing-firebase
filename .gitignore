@@ -16,6 +16,7 @@ artifacts/
 node_modules/
 functions/node_modules/
 .wrangler
+tsconfig.tsbuildinfo
 
 # env
 .env
