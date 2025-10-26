@@ -7,9 +7,20 @@ type AdminActionBody = {
   seedBatchId?: string;
 };
 
+function parseAdminBody(value: unknown): AdminActionBody {
+  if (!value || typeof value !== "object") return {};
+  const record = value as Record<string, unknown>;
+  const action = record["action"];
+  const seedBatchId = record["seedBatchId"];
+  return {
+    action: action === "seed" || action === "reset" ? action : undefined,
+    seedBatchId: typeof seedBatchId === "string" && seedBatchId.length > 0 ? seedBatchId : undefined,
+  };
+}
+
 export async function POST(request: Request) {
   try {
-    const body = (await request.json().catch(() => ({}))) as AdminActionBody;
+    const body = parseAdminBody(await request.json().catch(() => null));
     const action = body.action;
     const db = getAdminDb();
 
