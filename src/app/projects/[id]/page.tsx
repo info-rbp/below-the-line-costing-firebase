@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
 import type { CostLineItem, MaterialCost, PaymentSchedule, Project } from "@/types/domain";
@@ -112,20 +112,23 @@ export default function ProjectDetailPage() {
     [aggregates.materials, milestoneFilter]
   );
 
-  const sortKeys = (keys: string[]) =>
-    keys.sort((a, b) => {
-      if (a === "unassigned") return 1;
-      if (b === "unassigned") return -1;
-      const left = aggregates.milestoneIndex[a]?.sortIndex ?? 0;
-      const right = aggregates.milestoneIndex[b]?.sortIndex ?? 0;
-      if (left !== right) return (Number(left) || 0) - (Number(right) || 0);
-      const leftName = aggregates.milestoneIndex[a]?.name || aggregates.milestoneIndex[a]?.code || a;
-      const rightName = aggregates.milestoneIndex[b]?.name || aggregates.milestoneIndex[b]?.code || b;
-      return leftName.localeCompare(rightName);
-    });
+  const sortKeys = useCallback(
+    (keys: string[]) =>
+      keys.sort((a, b) => {
+        if (a === "unassigned") return 1;
+        if (b === "unassigned") return -1;
+        const left = aggregates.milestoneIndex[a]?.sortIndex ?? 0;
+        const right = aggregates.milestoneIndex[b]?.sortIndex ?? 0;
+        if (left !== right) return (Number(left) || 0) - (Number(right) || 0);
+        const leftName = aggregates.milestoneIndex[a]?.name || aggregates.milestoneIndex[a]?.code || a;
+        const rightName = aggregates.milestoneIndex[b]?.name || aggregates.milestoneIndex[b]?.code || b;
+        return leftName.localeCompare(rightName);
+      }),
+    [aggregates.milestoneIndex]
+  );
 
-  const costGroups = useMemo(() => sortKeys(Object.keys(groupedCosts)), [groupedCosts]);
-  const materialGroups = useMemo(() => sortKeys(Object.keys(groupedMaterials)), [groupedMaterials]);
+  const costGroups = useMemo(() => sortKeys(Object.keys(groupedCosts)), [groupedCosts, sortKeys]);
+  const materialGroups = useMemo(() => sortKeys(Object.keys(groupedMaterials)), [groupedMaterials, sortKeys]);
 
   const filterLabel = useMemo(() => {
     if (milestoneFilter === undefined) return "All milestones";

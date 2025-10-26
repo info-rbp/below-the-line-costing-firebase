@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
 import type { PaymentSchedule, Project } from "@/types/domain";
@@ -121,14 +121,18 @@ export default function ExecutiveSummaryPage() {
   const milestoneMap = aggregates.milestoneIndex;
 
   const availableMonths = useMemo(() => Object.keys(aggregates.monthlyOutflows ?? {}), [aggregates.monthlyOutflows]);
-  const monthPool = useMemo(() => (availableMonths.length ? availableMonths : [monthKey(new Date())]), [availableMonths]);
+  const monthPool = useMemo(
+    () => (availableMonths.length ? availableMonths : [monthKey(new Date())]),
+    [availableMonths]
+  );
 
-  const isMilestoneAllowed = (milestoneId: string | undefined | null) => {
-    if (!milestoneId) {
-      return filters.includeMilestoneIds.length === 0;
-    }
-    if (filters.excludeMilestoneIds.includes(milestoneId)) {
-      return false;
+  const isMilestoneAllowed = useCallback(
+    (milestoneId: string | undefined | null) => {
+      if (!milestoneId) {
+        return filters.includeMilestoneIds.length === 0;
+      }
+      if (filters.excludeMilestoneIds.includes(milestoneId)) {
+        return false;
     }
     if (filters.includeMilestoneIds.length === 0) {
       return true;
@@ -144,7 +148,9 @@ export default function ExecutiveSummaryPage() {
       current = milestoneMap[current]?.parentId ?? null;
     }
     return false;
-  };
+    },
+    [filters.excludeMilestoneIds, filters.includeMilestoneIds, milestoneMap]
+  );
 
   const filteredCosts = useMemo(() => {
     return aggregates.costs.filter((cost) => {
@@ -155,7 +161,7 @@ export default function ExecutiveSummaryPage() {
       const ids = cost.milestoneIds && cost.milestoneIds.length > 0 ? cost.milestoneIds : ["__unassigned__"];
       return ids.some((id) => (id === "__unassigned__" ? filters.includeMilestoneIds.length === 0 : isMilestoneAllowed(id)));
     });
-  }, [aggregates.costs, filters.costCategories, filters.includeMilestoneIds.length, isMilestoneAllowed]);
+  }, [aggregates.costs, filters.costCategories, filters.includeMilestoneIds, isMilestoneAllowed]);
 
   const filteredMaterials = useMemo(() => {
     return aggregates.materials.filter((material) => {
@@ -165,7 +171,7 @@ export default function ExecutiveSummaryPage() {
       const ids = material.milestoneIds && material.milestoneIds.length > 0 ? material.milestoneIds : ["__unassigned__"];
       return ids.some((id) => (id === "__unassigned__" ? filters.includeMilestoneIds.length === 0 : isMilestoneAllowed(id)));
     });
-  }, [aggregates.materials, filters.costCategories, filters.includeMilestoneIds.length, isMilestoneAllowed]);
+  }, [aggregates.materials, filters.costCategories, filters.includeMilestoneIds, isMilestoneAllowed]);
 
   const totalsByMilestone = useMemo(() => {
     const totals = new Map<string, { labour: number; services: number; equipment: number; materials: number }>();
@@ -204,7 +210,7 @@ export default function ExecutiveSummaryPage() {
     });
 
     return totals;
-  }, [filteredCosts, filteredMaterials, filters.includeMilestoneIds.length, isMilestoneAllowed]);
+  }, [filteredCosts, filteredMaterials, filters.includeMilestoneIds, isMilestoneAllowed]);
 
   const filteredMonthlyOutflows = useMemo(() => {
     const allocations: Record<string, number>[] = [];
@@ -277,7 +283,15 @@ export default function ExecutiveSummaryPage() {
     }
 
     return combined;
-  }, [filteredCosts, filteredMaterials, filters.includeMilestoneIds.length, filters.monthRange, availableMonths, isMilestoneAllowed, milestoneMap]);
+  }, [
+    filteredCosts,
+    filteredMaterials,
+    filters.includeMilestoneIds,
+    filters.monthRange,
+    isMilestoneAllowed,
+    milestoneMap,
+    monthPool
+  ]);
 
   const computedData = useMemo<ComputedData>(() => {
     const labour = filteredCosts
@@ -359,7 +373,16 @@ export default function ExecutiveSummaryPage() {
       upcomingInvoices,
       filtersSummary,
     };
-  }, [totalsByMilestone, filters, payments, aggregates.milestones, project, filteredMonthlyOutflows]);
+  }, [
+    totalsByMilestone,
+    filters,
+    payments,
+    aggregates.milestones,
+    project,
+    filteredMonthlyOutflows,
+    filteredCosts,
+    filteredMaterials
+  ]);
 
   const activeSnapshot = useMemo(() => snapshots.find((item) => item.id === activeSnapshotId) ?? null, [snapshots, activeSnapshotId]);
 

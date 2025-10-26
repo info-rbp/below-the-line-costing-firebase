@@ -2,10 +2,15 @@ import { NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { resetSeededProjects, seedDemoProject } from "@/lib/admin/demoData";
 
+type AdminActionBody = {
+  action?: "seed" | "reset";
+  seedBatchId?: string;
+};
+
 export async function POST(request: Request) {
   try {
-    const body = await request.json().catch(() => ({}));
-    const action = body?.action;
+    const body = (await request.json().catch(() => ({}))) as AdminActionBody;
+    const action = body.action;
     const db = getAdminDb();
 
     if (action === "seed") {
