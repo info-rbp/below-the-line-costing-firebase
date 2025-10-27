@@ -1,15 +1,11 @@
 {
   "name": "btl-costing-worker",
   "main": "src/worker/_worker.ts",
-  "compatibility_date": "2025-10-26",
+  "compatibility_date": "2025-10-27",
   "assets": {
     "directory": "out"
   },
-  "routes": [
-    {
-      "pattern": "your-domain.workers.dev/*",
-      "zone_id": null
-    }
-  ],
-  "env": {}
+  "observability": {
+    "enabled": true
+  }
 }

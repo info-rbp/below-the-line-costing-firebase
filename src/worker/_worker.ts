@@ -1,54 +1,57 @@
-type WorkerEnv = {
-  ASSETS: {
-    fetch(request: Request): Promise<Response>;
-  };
-};
+import type { ExportedHandler, WorkerEnv } from "../../types/cloudflare-worker";
 
-type WorkerHandler = {
-  fetch(request: Request, env: WorkerEnv, ctx: unknown): Promise<Response>;
-};
-
-const handler: WorkerHandler = {
-  async fetch(request, env): Promise<Response> {
+export default {
+  async fetch(request: Request, env: WorkerEnv): Promise<Response> {
     const url = new URL(request.url);
 
     if (url.pathname.startsWith("/api/")) {
-      return handleApi(request);
+      if (request.method === "OPTIONS") {
+        return new Response(null, {
+          status: 204,
+          headers: corsHeaders(request.headers.get("Origin")),
+        });
+      }
+
+      if (url.pathname === "/api/health") {
+        return json({ ok: true });
+      }
+
+      return json({ error: "Not found" }, 404);
     }
 
     try {
-      const asset = await env.ASSETS.fetch(request);
-      if (asset.status !== 404) {
-        return asset;
+      // @ts-ignore provided by Wrangler asset binding at runtime
+      const assetResp = await env.ASSETS.fetch(request);
+      if (assetResp.status !== 404) {
+        return assetResp;
       }
-    } catch (error) {
-      console.error("Asset fetch failed", error);
+    } catch (_error) {
+      // ignore and fall back to SPA
     }
 
     const indexUrl = new URL("/", request.url);
-    const indexRequest = new Request(indexUrl.toString(), request);
-    return env.ASSETS.fetch(indexRequest);
-  }
-};
+    // @ts-ignore provided by Wrangler asset binding at runtime
+    return env.ASSETS.fetch(new Request(indexUrl, request));
+  },
+} satisfies ExportedHandler<WorkerEnv>;
 
-export default handler;
-
-async function handleApi(request: Request): Promise<Response> {
-  const url = new URL(request.url);
-
-  if (url.pathname === "/api/health") {
-    return json({ ok: true });
-  }
-
-  return json({ error: "Not found" }, 404);
+function corsHeaders(origin: string | null) {
+  const allowedOrigin = origin ?? "*";
+  return {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+    "Access-Control-Allow-Headers": "Authorization,Content-Type",
+    "Access-Control-Max-Age": "86400",
+    "Cache-Control": "no-store",
+  };
 }
 
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
     status,
     headers: {
+      ...corsHeaders(null),
       "Content-Type": "application/json",
-      "Cache-Control": "no-store"
-    }
+    },
   });
 }

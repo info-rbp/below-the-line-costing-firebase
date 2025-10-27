@@ -1,3 +1,5 @@
+import type { MaybeTimestamp } from "@/lib/dates/snapshotLabel";
+
 export type CostCategory = "Labour" | "Services" | "Equipment" | "Materials";
 
 export type ReportFiltersState = {
@@ -9,7 +11,7 @@ export type ReportFiltersState = {
 
 export type ExecutiveSummarySnapshot = {
   id?: string;
-  createdAt?: string;
+  createdAt?: MaybeTimestamp;
   filters: ReportFiltersState;
   totals: { label: string; amount: number }[];
   totalCost: number;

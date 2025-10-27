@@ -17,6 +17,7 @@ import { ReportFilters } from "@/features/report/ReportFilters";
 import { createReportSnapshot } from "@/features/report/snapshots/createSnapshot";
 import type { ExecutiveSummarySnapshot, ReportFiltersState } from "@/features/report/snapshots/types";
 import type { CostLineItem } from "@/types/domain";
+import { snapshotLabel } from "@/lib/dates/snapshotLabel";
 import "@/features/report/print.css";
 
 const defaultFilters: ReportFiltersState = {
@@ -126,30 +127,33 @@ export default function ExecutiveSummaryPage() {
     [availableMonths]
   );
 
+  const includeMilestoneIds = filters.includeMilestoneIds;
+  const excludeMilestoneIds = filters.excludeMilestoneIds;
+
   const isMilestoneAllowed = useCallback(
     (milestoneId: string | undefined | null) => {
       if (!milestoneId) {
-        return filters.includeMilestoneIds.length === 0;
+        return includeMilestoneIds.length === 0;
       }
-      if (filters.excludeMilestoneIds.includes(milestoneId)) {
+      if (excludeMilestoneIds.includes(milestoneId)) {
         return false;
-    }
-    if (filters.includeMilestoneIds.length === 0) {
-      return true;
-    }
-    if (filters.includeMilestoneIds.includes(milestoneId)) {
-      return true;
-    }
-    let current = milestoneMap[milestoneId]?.parentId ?? null;
-    while (current) {
-      if (filters.includeMilestoneIds.includes(current)) {
+      }
+      if (includeMilestoneIds.length === 0) {
         return true;
       }
-      current = milestoneMap[current]?.parentId ?? null;
-    }
-    return false;
+      if (includeMilestoneIds.includes(milestoneId)) {
+        return true;
+      }
+      let current = milestoneMap[milestoneId]?.parentId ?? null;
+      while (current) {
+        if (includeMilestoneIds.includes(current)) {
+          return true;
+        }
+        current = milestoneMap[current]?.parentId ?? null;
+      }
+      return false;
     },
-    [filters.excludeMilestoneIds, filters.includeMilestoneIds, milestoneMap]
+    [excludeMilestoneIds, includeMilestoneIds, milestoneMap]
   );
 
   const filteredCosts = useMemo(() => {
@@ -159,9 +163,9 @@ export default function ExecutiveSummaryPage() {
         return false;
       }
       const ids = cost.milestoneIds && cost.milestoneIds.length > 0 ? cost.milestoneIds : ["__unassigned__"];
-      return ids.some((id) => (id === "__unassigned__" ? filters.includeMilestoneIds.length === 0 : isMilestoneAllowed(id)));
+      return ids.some((id) => (id === "__unassigned__" ? includeMilestoneIds.length === 0 : isMilestoneAllowed(id)));
     });
-  }, [aggregates.costs, filters.costCategories, filters.includeMilestoneIds, isMilestoneAllowed]);
+  }, [aggregates.costs, filters.costCategories, includeMilestoneIds, isMilestoneAllowed]);
 
   const filteredMaterials = useMemo(() => {
     return aggregates.materials.filter((material) => {
@@ -169,9 +173,9 @@ export default function ExecutiveSummaryPage() {
         return false;
       }
       const ids = material.milestoneIds && material.milestoneIds.length > 0 ? material.milestoneIds : ["__unassigned__"];
-      return ids.some((id) => (id === "__unassigned__" ? filters.includeMilestoneIds.length === 0 : isMilestoneAllowed(id)));
+      return ids.some((id) => (id === "__unassigned__" ? includeMilestoneIds.length === 0 : isMilestoneAllowed(id)));
     });
-  }, [aggregates.materials, filters.costCategories, filters.includeMilestoneIds, isMilestoneAllowed]);
+  }, [aggregates.materials, filters.costCategories, includeMilestoneIds, isMilestoneAllowed]);
 
   const totalsByMilestone = useMemo(() => {
     const totals = new Map<string, { labour: number; services: number; equipment: number; materials: number }>();
@@ -187,7 +191,7 @@ export default function ExecutiveSummaryPage() {
       const amount = toCents(safeMul(cost.rate, cost.qty));
       if (!amount) return;
       const category = costTypeMap[cost.type];
-      const ids = cost.milestoneIds && cost.milestoneIds.length > 0 ? cost.milestoneIds : filters.includeMilestoneIds.length === 0 ? ["unassigned"] : [];
+      const ids = cost.milestoneIds && cost.milestoneIds.length > 0 ? cost.milestoneIds : includeMilestoneIds.length === 0 ? ["unassigned"] : [];
       ids.forEach((id) => {
         if (!id) return;
         assign(id, (bucket) => {
@@ -200,7 +204,7 @@ export default function ExecutiveSummaryPage() {
 
     filteredMaterials.forEach((material) => {
       const amount = materialTotalInCents(material);
-      const ids = material.milestoneIds && material.milestoneIds.length > 0 ? material.milestoneIds : filters.includeMilestoneIds.length === 0 ? ["unassigned"] : [];
+      const ids = material.milestoneIds && material.milestoneIds.length > 0 ? material.milestoneIds : includeMilestoneIds.length === 0 ? ["unassigned"] : [];
       ids.forEach((id) => {
         if (!id) return;
         assign(id, (bucket) => {
@@ -210,7 +214,7 @@ export default function ExecutiveSummaryPage() {
     });
 
     return totals;
-  }, [filteredCosts, filteredMaterials, filters.includeMilestoneIds, isMilestoneAllowed]);
+  }, [filteredCosts, filteredMaterials, includeMilestoneIds, isMilestoneAllowed]);
 
   const filteredMonthlyOutflows = useMemo(() => {
     const allocations: Record<string, number>[] = [];
@@ -242,7 +246,7 @@ export default function ExecutiveSummaryPage() {
             milestoneDates
           )
         );
-      } else if (filters.includeMilestoneIds.length === 0) {
+      } else if (includeMilestoneIds.length === 0) {
         const key = monthKey(cost.startDate ?? cost.endDate ?? new Date());
         allocations.push({ [key]: amount });
       }
@@ -283,15 +287,7 @@ export default function ExecutiveSummaryPage() {
     }
 
     return combined;
-  }, [
-    filteredCosts,
-    filteredMaterials,
-    filters.includeMilestoneIds,
-    filters.monthRange,
-    isMilestoneAllowed,
-    milestoneMap,
-    monthPool
-  ]);
+  }, [filteredCosts, filteredMaterials, includeMilestoneIds, filters.monthRange, isMilestoneAllowed, milestoneMap, monthPool]);
 
   const computedData = useMemo<ComputedData>(() => {
     const labour = filteredCosts
@@ -540,7 +536,7 @@ export default function ExecutiveSummaryPage() {
             <option value="">Live data</option>
             {snapshots.map((snapshot) => (
               <option key={snapshot.id} value={snapshot.id}>
-                {snapshot.createdAt.replace("T", " ")}
+                {snapshotLabel(snapshot.id, snapshot.createdAt)}
               </option>
             ))}
           </select>
