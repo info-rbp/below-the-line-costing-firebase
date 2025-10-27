@@ -14,7 +14,7 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
-    "types": ["node", "@cloudflare/workers-types", "./types/vitest"],
+    "types": ["node", "./types/cloudflare-worker", "./types/vitest"],
     "baseUrl": ".",
     "paths": {
       "@/components/*": ["src/components/*"],

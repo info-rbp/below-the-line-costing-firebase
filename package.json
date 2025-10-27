@@ -29,7 +29,6 @@
     "@types/react-dom": "^18.2.18",
     "eslint": "^8.57.0",
     "eslint-config-next": "^14.2.4",
-    "@cloudflare/workers-types": "^4.20241022.0",
     "serve": "^14.2.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.4.5",

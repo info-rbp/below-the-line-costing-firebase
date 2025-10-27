@@ -1,6 +1,14 @@
-import type { ExportedHandler } from "@cloudflare/workers-types";
+type WorkerEnv = {
+  ASSETS: {
+    fetch(request: Request): Promise<Response>;
+  };
+};
 
-const handler: ExportedHandler = {
+type WorkerHandler = {
+  fetch(request: Request, env: WorkerEnv, ctx: unknown): Promise<Response>;
+};
+
+const handler: WorkerHandler = {
   async fetch(request, env): Promise<Response> {
     const url = new URL(request.url);
 
@@ -9,7 +17,6 @@ const handler: ExportedHandler = {
     }
 
     try {
-      // @ts-expect-error Cloudflare injects the binding at runtime
       const asset = await env.ASSETS.fetch(request);
       if (asset.status !== 404) {
         return asset;
@@ -20,7 +27,6 @@ const handler: ExportedHandler = {
 
     const indexUrl = new URL("/", request.url);
     const indexRequest = new Request(indexUrl.toString(), request);
-    // @ts-expect-error Cloudflare injects the binding at runtime
     return env.ASSETS.fetch(indexRequest);
   }
 };
