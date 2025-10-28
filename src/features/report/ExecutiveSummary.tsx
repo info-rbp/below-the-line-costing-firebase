@@ -16,7 +16,7 @@ type BreakdownRow = {
   amount: number;
 };
 
-type Props = {
+export interface ExecutiveSummaryProps {
   project: Project;
   loading: boolean;
   totals: BreakdownRow[];
@@ -34,10 +34,10 @@ type Props = {
   onExportPaymentsCsv: () => void;
   filtersSummary?: string;
   footerStamp: { generatedOn: string; projectId: string; version?: string };
-  milestoneTotals?: Record<string, MilestoneTotals>;
-  milestoneIndex?: MilestoneIndex;
-  projectTotals?: MilestoneTotals;
-};
+  milestoneTotals: Record<string, MilestoneTotals>;
+  milestoneIndex: MilestoneIndex;
+  projectTotals: MilestoneTotals;
+}
 
 export function ExecutiveSummary({
   project,
@@ -60,7 +60,7 @@ export function ExecutiveSummary({
   milestoneTotals: _milestoneTotals,
   milestoneIndex: _milestoneIndex,
   projectTotals: _projectTotals,
-}: Props) {
+}: ExecutiveSummaryProps) {
   void _milestoneTotals;
   void _milestoneIndex;
   void _projectTotals;
