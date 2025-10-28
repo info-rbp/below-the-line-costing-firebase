@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import type { PaymentSchedule, Project } from "@/types/domain";
 import { formatCurrency, formatCurrencyFromCents } from "@/lib/calc/format";
+import type { MilestoneTotals } from "@/lib/calc/rollups";
 import { exportExecutiveSummaryPdf, registerExportContainer, triggerPrint } from "./ExportPDF";
 import { BreakdownTable } from "./components/BreakdownTable";
 import { CashflowMiniChart } from "./components/CashflowMiniChart";
@@ -13,6 +14,19 @@ type BreakdownRow = {
   label: string;
   amount: number;
 };
+
+type LegacyMilestoneIndex = Record<
+  string,
+  {
+    id?: string;
+    name?: string;
+    code?: string;
+    parentId?: string | null;
+    sortIndex?: number | null;
+    startDate?: string;
+    endDate?: string;
+  }
+>;
 
 type Props = {
   project: Project;
@@ -32,6 +46,12 @@ type Props = {
   onExportPaymentsCsv: () => void;
   filtersSummary?: string;
   footerStamp: { generatedOn: string; projectId: string; version?: string };
+  /** @deprecated Legacy props from pre-route refactor. */
+  milestoneTotals?: Record<string, MilestoneTotals>;
+  /** @deprecated Legacy props from pre-route refactor. */
+  milestoneIndex?: LegacyMilestoneIndex;
+  /** @deprecated Legacy props from pre-route refactor. */
+  projectTotals?: MilestoneTotals;
 };
 
 export function ExecutiveSummary({
