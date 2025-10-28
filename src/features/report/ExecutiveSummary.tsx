@@ -34,9 +34,9 @@ type Props = {
   onExportPaymentsCsv: () => void;
   filtersSummary?: string;
   footerStamp: { generatedOn: string; projectId: string; version?: string };
-  milestoneTotals: Record<string, MilestoneTotals>;
-  milestoneIndex: MilestoneIndex;
-  projectTotals: MilestoneTotals;
+  milestoneTotals?: Record<string, MilestoneTotals>;
+  milestoneIndex?: MilestoneIndex;
+  projectTotals?: MilestoneTotals;
 };
 
 export function ExecutiveSummary({
