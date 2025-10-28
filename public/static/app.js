@@ -3,9 +3,14 @@
 
 // Global state
 const state = {
-  user: null,
+  user: {
+    id: 'demo-user',
+    name: 'Demo User',
+    full_name: 'Demo User',
+    role: 'admin'
+  },
   token: null,
-  currentView: 'login',
+  currentView: 'dashboard',
   projects: [],
   personnel: [],
   currentProject: null
@@ -36,11 +41,9 @@ const api = {
       return response.data;
     } catch (error) {
       if (error.response?.status === 401) {
-        // Token expired, redirect to login
         state.token = null;
-        state.user = null;
         localStorage.removeItem('token');
-        showView('login');
+        console.warn('Request returned 401. Authentication is disabled for this preview build.');
       }
       throw error.response?.data || error;
     }
@@ -948,41 +951,38 @@ async function loadInitialData() {
 }
 
 function logout() {
-  state.token = null;
-  state.user = null;
-  state.currentView = 'login';
-  localStorage.removeItem('token');
-  showView('login');
+  alert('Authentication is disabled for this preview build.');
 }
 
 function showView(view) {
-  state.currentView = view;
+  const targetView = view === 'login' ? 'dashboard' : view;
+  state.currentView = targetView;
   const app = document.getElementById('app');
-  
-  if (view === 'login') {
-    app.innerHTML = components.loginView();
-    document.getElementById('loginForm')?.addEventListener('submit', handleLogin);
-  } else {
-    app.innerHTML = components.dashboardView();
-    
-    const mainContent = document.getElementById('mainContent');
-    if (view === 'dashboard') {
-      mainContent.innerHTML = components.overviewContent();
-    } else if (view === 'projects') {
-      mainContent.innerHTML = components.projectsView();
-    } else if (view === 'personnel') {
-      mainContent.innerHTML = components.personnelView();
-    } else if (view === 'manager-settings') {
-      mainContent.innerHTML = components.managerSettingsView();
-      // Load clients data when entering manager settings
-      loadClientsData();
-    } else if (view === 'pending-approvals') {
-      mainContent.innerHTML = components.pendingApprovalsView();
-      // Load pending approvals when entering view
-      loadPendingApprovals();
-    } else if (view === 'integrations') {
-      mainContent.innerHTML = components.integrationsView();
-    }
+  if (!app) return;
+
+  app.innerHTML = components.dashboardView();
+
+  const mainContent = document.getElementById('mainContent');
+  if (!mainContent) {
+    return;
+  }
+
+  if (targetView === 'dashboard') {
+    mainContent.innerHTML = components.overviewContent();
+  } else if (targetView === 'projects') {
+    mainContent.innerHTML = components.projectsView();
+  } else if (targetView === 'personnel') {
+    mainContent.innerHTML = components.personnelView();
+  } else if (targetView === 'manager-settings') {
+    mainContent.innerHTML = components.managerSettingsView();
+    // Load clients data when entering manager settings
+    loadClientsData();
+  } else if (targetView === 'pending-approvals') {
+    mainContent.innerHTML = components.pendingApprovalsView();
+    // Load pending approvals when entering view
+    loadPendingApprovals();
+  } else if (targetView === 'integrations') {
+    mainContent.innerHTML = components.integrationsView();
   }
 }
 
@@ -2102,7 +2102,6 @@ async function rejectProject(projectId) {
 
 // Initialize app
 (async function init() {
-  // Check for existing token
   const savedToken = localStorage.getItem('token');
   if (savedToken) {
     state.token = savedToken;
@@ -2118,6 +2117,7 @@ async function rejectProject(projectId) {
       localStorage.removeItem('token');
     }
   }
-  
-  showView('login');
+
+  await loadInitialData();
+  showView('dashboard');
 })();
