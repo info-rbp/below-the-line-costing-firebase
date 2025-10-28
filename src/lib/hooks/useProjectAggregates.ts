@@ -15,12 +15,12 @@ import {
 } from "@/lib/calc/rollups";
 import { safeAdd, safeMul, toCents } from "@/lib/calc/money";
 
-type MilestoneIndex = Record<
+export type MilestoneIndex = Record<
   string,
   Pick<Milestone, "id" | "name" | "code" | "parentId" | "sortIndex" | "startDate" | "endDate">
 >;
 
-type AggregateResult = {
+export type AggregateResult = {
   loading: boolean;
   milestoneIndex: MilestoneIndex;
   totalsByMilestoneId: Record<string, MilestoneTotals>;

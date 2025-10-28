@@ -574,6 +574,9 @@ export default function ExecutiveSummaryPage() {
           projectId,
           version: activeSnapshotId ?? "live",
         }}
+        milestoneTotals={aggregates.totalsByMilestoneId}
+        milestoneIndex={aggregates.milestoneIndex}
+        projectTotals={aggregates.projectTotals}
       />
     </main>
   );
