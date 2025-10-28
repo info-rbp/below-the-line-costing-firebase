@@ -15,7 +15,6 @@ import { PaymentSummary } from "@/features/payments/PaymentSummary";
 import { CashflowChart } from "@/features/cashflow/CashflowChart";
 import { RatesAudit } from "@/features/audit/RatesAudit";
 import { ValidationCheck } from "@/features/audit/ValidationCheck";
-import { ExecutiveSummary } from "@/features/report/ExecutiveSummary";
 import { safeMul, toCents } from "@/lib/calc/money";
 import type { MilestoneTotals as Totals } from "@/lib/calc/rollups";
 import { formatError } from "@/lib/errors/format";
@@ -360,13 +359,6 @@ export default function ProjectDetailPage() {
       <PaymentSummary payments={payments} projectTotals={totals} />
       <CashflowChart monthlyOutflows={aggregates.monthlyOutflows} />
       <RatesAudit costs={aggregates.costs} materials={aggregates.materials} />
-      <ExecutiveSummary
-        project={project}
-        milestoneTotals={aggregates.totalsByMilestoneId}
-        milestoneIndex={aggregates.milestoneIndex}
-        payments={payments}
-        projectTotals={totals}
-      />
 
       <ValidationCheck
         open={validationOpen}

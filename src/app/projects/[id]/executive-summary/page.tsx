@@ -370,7 +370,6 @@ export default function ExecutiveSummaryPage() {
       filtersSummary,
     };
   }, [
-    totalsByMilestone,
     filters,
     payments,
     aggregates.milestones,
