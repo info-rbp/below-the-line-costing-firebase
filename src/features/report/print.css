@@ -1,0 +1,50 @@
+@media print {
+  body {
+    background: #fff !important;
+    color: #111827;
+    font-size: 12px;
+  }
+
+  main.container {
+    max-width: 210mm;
+    margin: 0 auto;
+    padding: 0;
+  }
+
+  .card {
+    box-shadow: none !important;
+    border: 1px solid #e5e7eb !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  nav,
+  header,
+  footer,
+  .button-primary,
+  .button-secondary,
+  .button-ghost,
+  .print-hidden,
+  button {
+    display: none !important;
+  }
+
+  .print-visible {
+    display: block !important;
+  }
+
+  table {
+    page-break-inside: avoid;
+  }
+
+  table thead { display: table-header-group; }
+  table tfoot { display: table-footer-group; }
+
+  .print-footer {
+    display: block;
+    text-align: right;
+    margin-top: 1rem;
+    font-size: 0.75rem;
+    color: #6b7280;
+  }
+}

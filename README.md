@@ -1,464 +1,202 @@
-# BTL Costing Application - Firebase Version
+# Below the Line Costing – Firebase prototype
 
-## Project Overview
+This repository contains the Firebase Studio prototype for the Below the Line costing wizard. It is a Next.js 14 application that
+captures project cost data in Firestore through a guided workflow and renders read-only project dashboards for demos.
 
-**Below the Line (BTL) Costing Application** is a modern web-based project costing and financial management system, now powered by Google Firebase for scalable cloud deployment.
+## Prerequisites
 
-### Technology Stack
+- Node.js 18 LTS
+- npm 9+
+- Firebase CLI (`npm install -g firebase-tools`)
+- Access to the Firebase project credentials supplied by the client
 
-- **Backend**: Express.js + Firebase Functions
-- **Frontend**: Vanilla JavaScript with Tailwind CSS  
-- **Database**: Cloud Firestore (NoSQL)
-- **Hosting**: Firebase Hosting
-- **Authentication**: JWT with bcrypt password hashing
-- **Platform**: Google Cloud Platform / Firebase
+Verify the local environment:
 
-### Key Features
+```bash
+node -v
+firebase --version
+```
 
-- **Enhanced 6-Step Project Creation Wizard**
-  - Project Basics with Client Dropdown (CRM integration)
-  - Hierarchical Milestone Tree Builder (3-level structure)
-  - Labour Costs with WBS builder
-  - Material Costs with Materials Master Integration
-  - Payment Schedule with revenue tracking
-  - Review & Create with Approval Workflow
+## Project structure
 
-- **Manager Settings Dashboard** (Admin/Manager Only)
-  - Clients CRM with full CRUD operations
-  - Materials Master Catalog management
-  - Employee Master database
-  - System Settings configuration
+```
+root
+├── firebase.json
+├── .firebaserc
+├── package.json
+├── public/
+├── src/
+│   ├── app/              # App Router pages (wizard, project detail, lookups admin)
+│   ├── components/       # Shared UI such as the toast provider
+│   ├── features/         # Reserved for future domain features
+│   ├── lib/              # Firebase bootstrap, repositories, validation schemas
+│   ├── materials/        # Reserved folders for scoped feature work
+│   ├── milestones/
+│   ├── payments/
+│   ├── projects/
+│   ├── styles/
+│   └── types/
+└── scripts/
+```
 
-- **Approval Workflow System** (Manager/Admin Only)
-  - Pending Approvals view
-  - Approve/Reject with comments
-  - Complete audit trail
-  - Status indicators
+## Installation
 
-- **Enhanced Project Management**
-  - Project status indicators
-  - Approval status tracking
-  - Client information management
-  - Real-time margin warnings
+1. Copy the provided Firebase web app keys into `.env.local` (or use the included `.env.local.example` template).
 
-- **Personnel Register**: Staff database with hourly costs and banded rates
-- **Cost Tracking**: Labour and material cost management
-- **G&A Calculations**: Automatic General & Administrative cost allocation
-- **Multi-user Authentication**: Role-based access control (Admin, Manager, User, Viewer)
-- **Real-time Dashboard**: Live project metrics and cost summaries
+   ```ini
+   NEXT_PUBLIC_FIREBASE_API_KEY=...
+   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=...
+   NEXT_PUBLIC_FIREBASE_PROJECT_ID=...
+   NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=...
+   NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...
+   NEXT_PUBLIC_FIREBASE_APP_ID=...
+   ```
 
-## Cloudflare Pages Direct Upload Deployment
+2. Install dependencies:
 
-This repository now includes a pre-built Cloudflare Pages bundle under `dist/` along with a helper script that packages it for the **Direct Upload** workflow.
-
-1. Install dependencies (needed only once):
    ```bash
    npm install
    ```
-2. Build or refresh the bundle if you have made source changes (this project ships with a compiled bundle already):
+
+   > If registry access is blocked in your environment, request it or install the dependencies in Firebase Studio where internet
+   > access is available.
+
+3. Start the local dev server:
+
+   ```bash
+   npm run dev
+   ```
+
+   Navigate to `http://localhost:3000` to open the wizard.
+
+4. Build for static export (required when bundling for Firebase Studio hosting):
+
    ```bash
    npm run build
    ```
-   > The current `npm run build` placeholder assumes the Worker bundle in `dist/` is already up to date. If you maintain the source, run the appropriate build process before packaging.
-3. Create the upload artefacts:
-   ```bash
-   npm run package:direct-upload
-   ```
-   This command copies everything from `dist/` into `artifacts/pages-direct-upload/` and produces `artifacts/pages-direct-upload.zip`.
-4. In the Cloudflare Pages dashboard, choose **Direct Upload → Upload assets** and provide the ZIP file created in step 3.
-5. After the upload completes, re-configure any bindings (D1, KV, environment variables, secrets) through the Pages project settings because Direct Upload does not read the `wrangler` configuration automatically.
 
-> **Note:** Direct Upload currently lacks feature parity with `wrangler pages deploy`. If your Worker requires bindings such as `env.DB`, make sure those bindings are defined in the Pages dashboard BEFORE testing the deployment. Missing bindings will cause runtime errors even though the upload succeeds.
+   The exported site will be written to `out/`. Run `npm run preview` to serve the static export for smoke testing.
 
-### GitHub / Automatic Deployments
+## Firebase Studio usage
 
-If you connect this repository to Cloudflare Pages through GitHub:
+1. Open Firebase Studio and create environment variables that mirror the `.env.local` entries.
+2. Run `npm install` and `npm run dev` within Studio to serve the application.
+3. Use the wizard at `/wizard` to create a project, add milestones, cost line items, materials, and payment schedules.
+4. Save drafts at any step. The data is written into the following Firestore paths:
+   - `projects/{projectId}` – project basics and status
+   - `projects/{projectId}/milestones` – milestone documents ordered by `sortIndex`
+   - `projects/{projectId}/costLineItems` – labour and service entries
+   - `projects/{projectId}/materialCosts` – material cost entries
+   - `projects/{projectId}/paymentSchedules` – invoice records
+ - `projects/{projectId}/lookups/{roles|materials|rateBands}/items` – lookup values that populate dropdowns
+5. Submit the project from step 6 to mark it as `active` and navigate to `/projects/{projectId}` for the read-only overview.
+6. Manage lookup values for dropdowns at `/projects/{projectId}/admin/lookups`.
 
-- **Build command**: `npm run build`
-- **Build output directory**: `dist`
-- **Deploy command**: *(leave empty)* — Pages will automatically publish the `dist/` assets after the build completes.
+## Demo data utilities
 
-The `npm run build` script copies the precompiled Worker bundle and static assets from `cloudflare-build/` into `dist/`, ensuring the Worker (`_worker.js`), routing manifest, and `/static` assets exist for the deployment. Because the Worker depends on bindings (e.g., `DB`), be sure to configure those in the Pages project settings under **Functions → Settings → Bindings**.
-
-## Quick Start
-
-### Prerequisites
-
-- Node.js 18+ installed
-- Firebase CLI installed: `npm install -g firebase-tools`
-- Google account
-- Firebase project created (Blaze plan)
-
-### Installation
+The repository now includes scripts that generate a comprehensive sample project for demos and a matching reset utility. Both commands require Firebase Admin credentials via either the `FIREBASE_SERVICE_ACCOUNT` environment variable (containing the JSON payload) or `GOOGLE_APPLICATION_CREDENTIALS` pointing to a service account file.
 
 ```bash
-# Clone or download the project
-cd /home/user/webapp
-
-# Install root dependencies (if any)
-npm install
-
-# Install Firebase Functions dependencies
-cd functions
-npm install
-cd ..
+npm run seed   # creates a seeded demo project with milestones, costs, materials, and payments
+npm run reset  # removes any documents created by the seed script (optionally pass --batch <seedBatchId>)
 ```
 
-### Firebase Setup
-
-1. **Login to Firebase**
-   ```bash
-   firebase login
-   ```
-
-2. **Initialize Firebase**
-   ```bash
-   firebase init
-   ```
-   Select: Functions, Firestore, Hosting
-
-3. **Update Project ID**
-   Edit `.firebaserc` and set your Firebase project ID:
-   ```json
-   {
-     "projects": {
-       "default": "your-firebase-project-id"
-     }
-   }
-   ```
-
-4. **Set Environment Variables**
-   ```bash
-   firebase functions:config:set jwt.secret="your-secret-key"
-   ```
-
-5. **Deploy to Firebase**
-   ```bash
-   firebase deploy
-   ```
-
-### Initial Setup
-
-**Three easy methods to initialize your admin account:**
-
-#### Option 1: Web-Based Setup (Easiest) ⭐
-1. Deploy the application: `firebase deploy`
-2. Navigate to: `https://your-project.web.app/setup.html`
-3. Complete the setup form (pre-filled with defaults)
-4. Login with your credentials
-
-#### Option 2: Command-Line Script
-```bash
-# Initialize admin user
-npm run setup:init
-
-# Seed default data (optional)
-npm run setup:seed
-
-# Or do both at once
-npm run setup:all
-```
-
-#### Option 3: Manual Firestore Console
-See detailed instructions in **SETUP_GUIDE.md**
-
-**Default Admin Credentials:**
-- Email: `admin@jl2group.com`
-- Password: `admin123`
-
-⚠️ **Change the password after first login!**
-
-For complete setup instructions, see **[SETUP_GUIDE.md](SETUP_GUIDE.md)**
-
-## Local Development
-
-### Using Firebase Emulators
-
-```bash
-# Start all emulators
-firebase emulators:start
-
-# Access application at:
-# - Hosting: http://localhost:5000
-# - Functions: http://localhost:5001
-# - Firestore: http://localhost:8080
-# - Emulator UI: http://localhost:4000
-```
-
-### Testing
-
-```bash
-# Test API health
-curl http://localhost:5000/api/health
-
-# Test login
-curl -X POST http://localhost:5000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"admin@jl2group.com","password":"admin123"}'
-```
-
-## Project Structure
-
-```
-webapp/
-├── functions/                    # Firebase Functions (Express.js API)
-│   ├── src/
-│   │   ├── routes/              # API route handlers
-│   │   │   ├── auth.js          # Authentication
-│   │   │   ├── projects.js      # Project management
-│   │   │   ├── personnel.js     # Personnel management
-│   │   │   ├── costs.js         # Cost tracking
-│   │   │   ├── milestones.js    # Milestones
-│   │   │   ├── rateBands.js     # Rate bands
-│   │   │   ├── clients.js       # CRM clients
-│   │   │   └── materialsMaster.js # Materials catalog
-│   │   ├── middleware/
-│   │   │   └── auth.js          # Auth middleware
-│   │   ├── lib/
-│   │   │   └── auth.js          # Auth utilities
-│   │   └── config/              # Configuration files
-│   ├── index.js                 # Main Functions entry point
-│   └── package.json             # Functions dependencies
-├── public/                      # Static frontend files
-│   ├── index.html              # Main HTML file
-│   └── static/                 # JS, CSS, assets
-│       ├── app.js              # Frontend application
-│       ├── wizard.js           # Project wizard
-│       └── wizard-helpers.js   # Wizard utilities
-├── scripts/                     # Utility scripts
-│   └── hash_password.js        # Password hash generator
-├── firebase.json               # Firebase configuration
-├── .firebaserc                 # Firebase project settings
-├── firestore.rules            # Firestore security rules
-├── firestore.indexes.json     # Firestore indexes
-├── .gitignore                 # Git ignore file
-├── package.json               # Root package.json
-├── FIREBASE_DEPLOYMENT_GUIDE.md # Deployment guide
-└── README_FIREBASE.md         # This file
-```
-
-## API Documentation
-
-### Authentication
-
-**POST** `/api/auth/login` - User login
-**POST** `/api/auth/register` - User registration (Admin only)
-**GET** `/api/auth/me` - Get current user
-**POST** `/api/auth/change-password` - Change password
-
-### Projects
-
-**GET** `/api/projects` - List all projects
-**GET** `/api/projects/:id` - Get project details
-**POST** `/api/projects` - Create project (Manager+)
-**PUT** `/api/projects/:id` - Update project (Manager+)
-**DELETE** `/api/projects/:id` - Delete project (Admin only)
-**POST** `/api/projects/:id/recalculate` - Recalculate totals
-
-### Personnel
-
-**GET** `/api/personnel` - List all personnel
-**GET** `/api/personnel/:id` - Get personnel details
-**POST** `/api/personnel` - Create personnel (Manager+)
-**PUT** `/api/personnel/:id` - Update personnel (Manager+)
-**DELETE** `/api/personnel/:id` - Delete personnel (Admin only)
-
-### Costs
-
-**Labour Costs:**
-- **GET** `/api/costs/labour?project_id=xxx`
-- **POST** `/api/costs/labour`
-- **PUT** `/api/costs/labour/:id`
-- **DELETE** `/api/costs/labour/:id`
-
-**Material Costs:**
-- **GET** `/api/costs/material?project_id=xxx`
-- **POST** `/api/costs/material`
-- **PUT** `/api/costs/material/:id`
-- **DELETE** `/api/costs/material/:id`
-
-### Milestones
-
-**GET** `/api/milestones?project_id=xxx` - List milestones
-**POST** `/api/milestones` - Create milestone (Manager+)
-**PUT** `/api/milestones/:id` - Update milestone (Manager+)
-**DELETE** `/api/milestones/:id` - Delete milestone (Manager+)
-
-### Rate Bands
-
-**GET** `/api/rate-bands` - List rate bands
-**POST** `/api/rate-bands` - Create rate band (Manager+)
-**PUT** `/api/rate-bands/:id` - Update rate band (Manager+)
-**DELETE** `/api/rate-bands/:id` - Delete rate band (Admin only)
-
-### Clients
-
-**GET** `/api/clients` - List all clients
-**POST** `/api/clients` - Create client (Manager+)
-**PUT** `/api/clients/:id` - Update client (Manager+)
-**DELETE** `/api/clients/:id` - Delete client (Admin only)
-
-### Materials Master
-
-**GET** `/api/materials-master` - List all materials
-**POST** `/api/materials-master` - Create material (Manager+)
-**PUT** `/api/materials-master/:id` - Update material (Manager+)
-**DELETE** `/api/materials-master/:id` - Delete material (Admin only)
-
-## Firestore Collections
-
-The application uses the following Firestore collections:
-
-- `users` - User accounts and authentication
-- `projects` - Project information
-- `personnel` - Staff database
-- `rateBands` - Role-based pricing
-- `clients` - CRM client database
-- `materialsMaster` - Pre-defined materials catalog
-- `milestones` - Project milestones
-- `costLineItems` - Labour costs
-- `materialCosts` - Material costs
-- `paymentSchedule` - Billing milestones
-- `projectApprovals` - Approval audit trail
-
-## Deployment
-
-### Deploy Everything
-
-```bash
-firebase deploy
-```
-
-### Deploy Specific Components
-
-```bash
-# Deploy only Functions
-firebase deploy --only functions
-
-# Deploy only Hosting
-firebase deploy --only hosting
-
-# Deploy only Firestore rules
-firebase deploy --only firestore:rules
-
-# Deploy only Firestore indexes
-firebase deploy --only firestore:indexes
-```
-
-### View Logs
-
-```bash
-# View function logs
-firebase functions:log
-
-# Tail logs in real-time
-firebase functions:log --only api
-```
-
-## Monitoring and Costs
-
-### Firebase Console
-
-Access monitoring and usage:
-1. Go to [Firebase Console](https://console.firebase.google.com/)
-2. Select your project
-3. Navigate to:
-   - **Functions** → View invocations and execution time
-   - **Firestore** → View database usage and reads/writes
-   - **Hosting** → View bandwidth and requests
-
-### Cost Monitoring
-
-Set up budget alerts in Firebase Console:
-1. Go to "Usage and billing"
-2. Set budget alerts
-3. Recommended: $25/month alert
-
-**Expected Costs:**
-- Low traffic (<10K requests/month): $0-5/month
-- Medium traffic (<50K requests/month): $5-15/month
-- High traffic (<200K requests/month): $15-40/month
-
-## Security
-
-### Firestore Security Rules
-
-Security rules are defined in `firestore.rules`:
-- Users can only read their own data
-- Managers and Admins can write to most collections
-- All operations require authentication
-
-### Best Practices
-
-1. Change default admin password immediately
-2. Rotate JWT secret regularly
-3. Review Firestore rules before production
-4. Enable Firebase App Check
-5. Set up Cloud Monitoring alerts
-6. Use HTTPS only (enforced by Firebase)
-7. Implement rate limiting for sensitive endpoints
-
-## Troubleshooting
-
-### Common Issues
-
-**Issue**: "Billing account not configured"
-- **Solution**: Upgrade to Blaze plan in Firebase Console
-
-**Issue**: Permission denied in Firestore
-- **Solution**: Deploy Firestore rules: `firebase deploy --only firestore:rules`
-
-**Issue**: Functions deployment fails
-- **Solution**: Check Node.js version (18+), reinstall dependencies
-
-**Issue**: CORS errors
-- **Solution**: Already configured in Express app, check browser console
-
-**Issue**: Cannot connect to API
-- **Solution**: Verify `firebase.json` rewrites configuration
-
-## Documentation
-
-- **Deployment Guide**: See `FIREBASE_DEPLOYMENT_GUIDE.md`
-- **Firebase Docs**: https://firebase.google.com/docs
-- **Cloud Functions**: https://firebase.google.com/docs/functions
-- **Firestore**: https://firebase.google.com/docs/firestore
-
-## Support
-
-For issues or questions:
-- **Email**: admin@jl2group.com
-- **Firebase Support**: https://firebase.google.com/support
-
-## Migration Notes
-
-This application was migrated from Cloudflare Workers/Pages to Firebase on October 17, 2025.
-
-**Key Changes:**
-- Hono → Express.js
-- Cloudflare D1 (SQLite) → Cloud Firestore (NoSQL)
-- Cloudflare Workers → Firebase Functions
-- Cloudflare Pages → Firebase Hosting
-- Web Crypto API → bcryptjs + jsonwebtoken
-
-**Backup**: Original Cloudflare version backed up as `webapp-cloudflare-backup-YYYYMMDD.tar.gz`
-
-## Version History
-
-- **v2.0** (October 2025) - Firebase migration
-- **v1.0** (September 2025) - Initial Cloudflare version
-
-## License
-
-Proprietary - JL2 Group
-
-## Credits
-
-**Developer**: Gianpaulo Coletti - Remote Business Partner (Tiberius Holdings Group)
-**Client**: JL2 Group
-**Version**: 2.0 (Firebase)
-**Last Updated**: October 17, 2025
-
----
-
-For complete deployment instructions, see **FIREBASE_DEPLOYMENT_GUIDE.md**
+Each seeded document is tagged with `seeded: true` and a `seedBatchId`. Rerunning the seed command produces a fresh batch without affecting manually entered data. Use the UI controls on the lookups admin page to trigger the same seed and reset workflow in Firebase Studio without leaving the app.
+
+## Wizard behaviour
+
+- Validation is powered by `zod` and is enforced before moving between steps.
+- “Save draft” persists the currently valid sections without requiring completion of later steps.
+- Toast notifications provide success and error feedback for every save and load operation.
+- All Firestore writes use consistent repositories located in `src/lib/repo`.
+
+## Totals and rollups
+
+- Monetary maths is calculated in cents inside `src/lib/calc` to prevent floating point rounding errors. Display helpers in
+  `format.ts` convert the stored cents back into formatted currency strings.
+- Milestone rollups include all descendant milestones. Selecting a parent milestone in the totals table filters cost build and
+  materials lists to the entire branch.
+- The executive header on `/projects/{id}` shows project totals broken down into labour, services, equipment, and materials,
+  plus the milestone count and inferred delivery window.
+
+### Allocation assumptions
+
+- Labour, service, and equipment line items apportion their totals equally across linked milestones. If no milestone is linked,
+  the amount falls back to the provided start date month (or the project window when dates are absent).
+- Material costs:
+  - `one-time` charges post in the provided month.
+  - `monthly` charges repeat evenly for each calendar month between `startDate` and `endDate`.
+  - `milestone` charges split evenly across linked milestones, again using the milestone month for allocation.
+- The cash flow table aggregates monthly allocations for both labour and materials. Use the CSV export button to pull the data
+  into a spreadsheet for further modelling.
+
+## Payment plan and reconciliation
+
+- The payment schedule panel subscribes to `projects/{id}/paymentSchedules`, supports multi-select linking to milestones and
+  material cost lines, and blocks creation until `invoiceNo`, `invoiceDate`, and a positive `amount` pass validation.
+- The billed vs remaining banner recalculates instantly as invoices are added or removed. The reconciliation summary below the
+  schedule surfaces whether the project is under-billed, exactly billed, or over-billed.
+- Run the “Rates audit” to highlight cost lines with missing or zero rates and open the “Validate data” modal to review data
+  completeness checks before sharing a demo build.
+
+## Client-ready executive summary
+
+- Open `/projects/{projectId}/executive-summary` for a client-facing dashboard. The page is responsive and uses the aggregated
+  totals from `useProjectAggregates`.
+- Key metrics include overall cost, category subtotals, invoice variance badges, the next six months of cash flow, and the
+  upcoming invoice list.
+- The Print button triggers `window.print()` with the print stylesheet at `src/features/report/print.css`, producing an A4
+  output with a footer that includes the generation date, project ID, and report version.
+- The Export PDF button uses the wrapper in `src/features/report/ExportPDF.ts`. By default it falls back to `window.print()`,
+  but it can be wired to a client-approved PDF library without touching the page implementation.
+- Milestone and payment CSV buttons export the active view to spreadsheet-ready formats for handover packs.
+
+### Filters and snapshots
+
+- The report filter panel allows:
+  - Including or excluding milestones
+  - Toggling cost categories
+  - Setting a month range for the cash flow table
+- Filters recompute headline totals and the cash flow snapshot instantly via memoised selectors.
+- Click **Create snapshot** to write the current data into `projects/{id}/reportSnapshots`. Selecting a snapshot from the
+  dropdown rehydrates the stored totals so printed packs always align with the original review.
+
+### Component demo
+
+- `/dev/report-demo` renders the `KPICard`, `BreakdownTable`, `CashflowMiniChart`, and `InvoiceStatus` widgets with sample
+  props so designers can verify layout changes without navigating a live project.
+
+## Lookup administration
+
+- `/projects/{projectId}/admin/lookups` now supports full CRUD for roles, materials, and rate bands. Name validation prevents
+  duplicates, and rate bands require a numeric hourly rate.
+- Editing happens inline with dedicated forms. Deleting a lookup checks for usage (e.g. cost lines referencing a role) before
+  removing the value and shows a friendly error when the value is still in use.
+- Lookup mutations invalidate the local cache so the wizard and other forms receive fresh dropdown options after each change.
+
+## Testing checklist
+
+| Command | Purpose |
+| ------- | ------- |
+| `npm run lint` | Lints the project with `eslint` |
+| `npm run typecheck` | Runs TypeScript without emitting files |
+| `npm run build` | Builds and exports the static bundle |
+| `npm run preview` | Serves the exported build for a manual smoke test |
+
+> When running inside this environment the npm registry may return HTTP 403. Run the commands in Firebase Studio if that
+> occurs.
+
+> ESLint now uses the flat configuration in `eslint.config.mjs`. Install dependencies locally before running `npm run lint`
+> so the Next.js presets resolve correctly.
+
+## Demo expectations
+
+Record a short demo (screen capture is sufficient) that shows:
+
+1. Creating a new project in the wizard and saving a draft.
+2. Adding ten or more milestones including parent/child relationships.
+3. Capturing several labour, material, and payment records.
+4. Submitting the project and navigating to `/projects/{projectId}` to confirm the read-only panels populate.
+5. Updating lookup values under `/projects/{projectId}/admin/lookups` and observing them populate dropdowns after a reload.
+
+Following this README from a clean checkout enables another developer to reproduce the Firebase Studio demo end-to-end.

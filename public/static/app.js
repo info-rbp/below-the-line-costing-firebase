@@ -3,9 +3,13 @@
 
 // Global state
 const state = {
-  user: null,
-  token: null,
-  currentView: 'login',
+  user: {
+    id: 'demo-user',
+    name: 'Demo User',
+    full_name: 'Demo User',
+    role: 'admin'
+  },
+  currentView: 'dashboard',
   projects: [],
   personnel: [],
   currentProject: null
@@ -21,10 +25,6 @@ const api = {
       ...options.headers
     };
     
-    if (state.token) {
-      headers['Authorization'] = `Bearer ${state.token}`;
-    }
-    
     try {
       const response = await axios({
         url: `${this.baseURL}${endpoint}`,
@@ -35,27 +35,8 @@ const api = {
       
       return response.data;
     } catch (error) {
-      if (error.response?.status === 401) {
-        // Token expired, redirect to login
-        state.token = null;
-        state.user = null;
-        localStorage.removeItem('token');
-        showView('login');
-      }
       throw error.response?.data || error;
     }
-  },
-  
-  // Auth endpoints
-  async login(email, password) {
-    return this.request('/auth/login', {
-      method: 'POST',
-      body: { email, password }
-    });
-  },
-  
-  async getMe() {
-    return this.request('/auth/me');
   },
   
   // Projects endpoints
@@ -125,54 +106,6 @@ const api = {
 
 // UI Components
 const components = {
-  // Login view
-  loginView() {
-    return `
-      <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-        <div class="card p-8 max-w-md w-full">
-          <div class="text-center mb-8">
-            <i class="fas fa-calculator text-5xl text-blue-600 mb-4"></i>
-            <h1 class="text-3xl font-bold text-gray-800">BTL Costing</h1>
-            <p class="text-gray-600 mt-2">Below the Line Cost Management</p>
-          </div>
-          
-          <form id="loginForm" class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-              <input type="email" name="email" required
-                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="admin@jl2group.com">
-            </div>
-            
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-              <input type="password" name="password" required
-                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Enter password">
-            </div>
-            
-            <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">
-              <i class="fas fa-sign-in-alt mr-2"></i> Sign In
-            </button>
-          </form>
-          
-          <div id="loginError" class="mt-4 hidden">
-            <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-              <i class="fas fa-exclamation-circle mr-2"></i>
-              <span id="loginErrorText">Invalid credentials</span>
-            </div>
-          </div>
-          
-          <div class="mt-6 text-center text-sm text-gray-600">
-            <p>Demo credentials:</p>
-            <p><strong>Admin:</strong> admin@jl2group.com / admin123</p>
-            <p><strong>Manager:</strong> manager@jl2group.com / admin123</p>
-          </div>
-        </div>
-      </div>
-    `;
-  },
-  
   // Dashboard view
   dashboardView() {
     return `
@@ -907,32 +840,6 @@ const components = {
   }
 };
 
-// Event handlers
-async function handleLogin(e) {
-  e.preventDefault();
-  const formData = new FormData(e.target);
-  const email = formData.get('email');
-  const password = formData.get('password');
-  
-  try {
-    const response = await api.login(email, password);
-    
-    if (response.success && response.token) {
-      state.token = response.token;
-      state.user = response.user;
-      localStorage.setItem('token', response.token);
-      
-      // Load initial data
-      await loadInitialData();
-      
-      showView('dashboard');
-    }
-  } catch (error) {
-    document.getElementById('loginError').classList.remove('hidden');
-    document.getElementById('loginErrorText').textContent = error.message || 'Login failed';
-  }
-}
-
 async function loadInitialData() {
   try {
     const [projectsRes, personnelRes] = await Promise.all([
@@ -948,41 +855,38 @@ async function loadInitialData() {
 }
 
 function logout() {
-  state.token = null;
-  state.user = null;
-  state.currentView = 'login';
-  localStorage.removeItem('token');
-  showView('login');
+  alert('Authentication is disabled for this preview build.');
 }
 
 function showView(view) {
-  state.currentView = view;
+  const targetView = view;
+  state.currentView = targetView;
   const app = document.getElementById('app');
-  
-  if (view === 'login') {
-    app.innerHTML = components.loginView();
-    document.getElementById('loginForm')?.addEventListener('submit', handleLogin);
-  } else {
-    app.innerHTML = components.dashboardView();
-    
-    const mainContent = document.getElementById('mainContent');
-    if (view === 'dashboard') {
-      mainContent.innerHTML = components.overviewContent();
-    } else if (view === 'projects') {
-      mainContent.innerHTML = components.projectsView();
-    } else if (view === 'personnel') {
-      mainContent.innerHTML = components.personnelView();
-    } else if (view === 'manager-settings') {
-      mainContent.innerHTML = components.managerSettingsView();
-      // Load clients data when entering manager settings
-      loadClientsData();
-    } else if (view === 'pending-approvals') {
-      mainContent.innerHTML = components.pendingApprovalsView();
-      // Load pending approvals when entering view
-      loadPendingApprovals();
-    } else if (view === 'integrations') {
-      mainContent.innerHTML = components.integrationsView();
-    }
+  if (!app) return;
+
+  app.innerHTML = components.dashboardView();
+
+  const mainContent = document.getElementById('mainContent');
+  if (!mainContent) {
+    return;
+  }
+
+  if (targetView === 'dashboard') {
+    mainContent.innerHTML = components.overviewContent();
+  } else if (targetView === 'projects') {
+    mainContent.innerHTML = components.projectsView();
+  } else if (targetView === 'personnel') {
+    mainContent.innerHTML = components.personnelView();
+  } else if (targetView === 'manager-settings') {
+    mainContent.innerHTML = components.managerSettingsView();
+    // Load clients data when entering manager settings
+    loadClientsData();
+  } else if (targetView === 'pending-approvals') {
+    mainContent.innerHTML = components.pendingApprovalsView();
+    // Load pending approvals when entering view
+    loadPendingApprovals();
+  } else if (targetView === 'integrations') {
+    mainContent.innerHTML = components.integrationsView();
   }
 }
 
@@ -2102,22 +2006,6 @@ async function rejectProject(projectId) {
 
 // Initialize app
 (async function init() {
-  // Check for existing token
-  const savedToken = localStorage.getItem('token');
-  if (savedToken) {
-    state.token = savedToken;
-    try {
-      const response = await api.getMe();
-      if (response.success) {
-        state.user = response.data;
-        await loadInitialData();
-        showView('dashboard');
-        return;
-      }
-    } catch (error) {
-      localStorage.removeItem('token');
-    }
-  }
-  
-  showView('login');
+  await loadInitialData();
+  showView('dashboard');
 })();

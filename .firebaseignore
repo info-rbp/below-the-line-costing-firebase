@@ -1,0 +1,8 @@
+cloudflare-build
+dist
+build
+node_modules
+functions/node_modules
+.env*
+.firebase
+firebase-debug*.log

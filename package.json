@@ -1,41 +1,42 @@
 {
-  "name": "webapp",
-  "type": "module",
+  "name": "below-the-line-costing",
+  "private": true,
+  "packageManager": "npm@10.9.0",
   "scripts": {
-    "dev": "node src/server.js",
-    "start": "node src/server.js",
-    "build": "node scripts/build-cloudflare.cjs",
-    "deploy": "firebase deploy --only functions,hosting",
-    "deploy:functions": "firebase deploy --only functions",
-    "deploy:hosting": "firebase deploy --only hosting",
-    "serve": "firebase serve",
-    "emulators:start": "firebase emulators:start",
-    "logs": "firebase functions:log",
-    "setup:init": "node scripts/init-admin-user.cjs",
-    "setup:seed": "node scripts/seed-database.cjs",
-    "setup:all": "npm run setup:init && npm run setup:seed",
-    "setup:test": "node scripts/test-setup.cjs",
-    "hash-password": "node scripts/hash_password.js",
-    "clean-port": "fuser -k 3000/tcp 2>/dev/null || true",
-    "test": "curl http://localhost:3000",
-    "git:init": "git init && git add . && git commit -m 'Initial commit'",
-    "git:commit": "git add . && git commit -m",
-    "git:status": "git status",
-    "git:log": "git log --oneline",
-    "package:direct-upload": "npm run build && node scripts/prepare-direct-upload.cjs",
-    "package:direct-upload:skip-build": "node scripts/prepare-direct-upload.cjs"
+    "dev": "next dev",
+    "build": "next build && next export",
+    "start": "next start",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "preview": "serve -s out -l 3000",
+    "test": "vitest run",
+    "seed": "ts-node scripts/seed.ts",
+    "reset": "ts-node scripts/reset.ts",
+    "worker:dev": "wrangler dev",
+    "worker:deploy": "wrangler deploy"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "cors": "^2.8.5",
-    "jsonwebtoken": "^9.0.2",
-    "bcryptjs": "^2.4.3",
-    "firebase-admin": "^12.0.0",
-    "firebase-functions": "^4.6.0",
-    "dotenv": "^16.3.1"
+    "date-fns": "^2.30.0",
+    "firebase-admin": "^12.7.0",
+    "firebase": "^10.12.2",
+    "next": "^14.2.4",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
-    "typescript": "^5.0.0",
-    "firebase-tools": "^13.0.0"
+    "@types/node": "^20.12.7",
+    "@types/react": "^18.2.47",
+    "@types/react-dom": "^18.2.18",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "^14.2.4",
+    "serve": "^14.2.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5",
+    "vitest": "^1.6.0",
+    "wrangler": "^3.78.12"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }
